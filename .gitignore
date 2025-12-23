@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+*.sqlite
+*.sqlite-journal
+server/uploads/*
+!server/uploads/.gitkeep
+.DS_Store
+coverage
+.vscode
+*.log

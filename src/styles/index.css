@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+.neo-float {
+  animation: neoFloat 6s ease-in-out infinite;
+}
+.neo-float-1 { animation-duration: 5s; }
+.neo-float-2 { animation-duration: 7s; }
+.neo-float-3 { animation-duration: 6.5s; }
+.neo-float-4 { animation-duration: 5.5s; }
+
+@keyframes neoFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+  100% { transform: translateY(0); }
+}

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizzaria Bella Massa - Cardápio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d1810 100%);
+            color: #fff;
+        }
+
+        header {
+            background: linear-gradient(to right, #8B0000, #DC143C);
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        header h1 {
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            font-style: italic;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .intro {
+            text-align: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+
+        .categorias {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .categoria h2 {
+            font-size: 2rem;
+            color: #FFD700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 3px solid #DC143C;
+            padding-bottom: 0.5rem;
+        }
+
+        .pizzas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .pizza-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 2px solid rgba(220,20,60,0.3);
+        }
+
+        .pizza-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(220,20,60,0.5);
+        }
+
+        .pizza-img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .pizza-info {
+            padding: 1.5rem;
+        }
+
+        .pizza-nome {
+            font-size: 1.5rem;
+            color: #FFD700;
+            margin-bottom: 0.5rem;
+        }
+
+        .pizza-desc {
+            color: #ddd;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .pizza-preco {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .preco {
+            font-size: 1.3rem;
+            color: #90EE90;
+            font-weight: bold;
+        }
+
+        .tamanho {
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            background: #1a1a1a;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+
+        .contato {
+            margin-top: 1rem;
+        }
+
+        .contato p {
+            margin: 0.5rem 0;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .pizzas-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🍕 Pizzaria Bella Massa 🍕</h1>
+        <p>Sabor autêntico, massa artesanal</p>
+    </header>
+
+    <div class="container">
+        <div class="intro">
+            <h2>Bem-vindo ao nosso cardápio!</h2>
+            <p>Pizzas preparadas com ingredientes selecionados e muito amor ❤️</p>
+        </div>
+
+        <div class="categorias">
+            <!-- Pizzas Tradicionais -->
+            <div class="categoria">
+                <h2>🔥 Pizzas Tradicionais</h2>
+                <div class="pizzas-grid">
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=500" alt="Pizza Margherita" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Margherita</h3>
+                            <p class="pizza-desc">Molho de tomate, mussarela, tomate fresco, manjericão e azeite</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 45,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 58,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1628840042765-356cda07504e?w=500" alt="Pizza Calabresa" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Calabresa</h3>
+                            <p class="pizza-desc">Molho de tomate, mussarela, calabresa fatiada e cebola</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 48,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 62,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500" alt="Pizza Portuguesa" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Portuguesa</h3>
+                            <p class="pizza-desc">Molho de tomate, mussarela, presunto, ovo, cebola, azeitona e orégano</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 52,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 68,00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pizzas Especiais -->
+            <div class="categoria">
+                <h2>⭐ Pizzas Especiais</h2>
+                <div class="pizzas-grid">
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=500" alt="Pizza Quatro Queijos" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Quatro Queijos</h3>
+                            <p class="pizza-desc">Mussarela, gorgonzola, parmesão, provolone e orégano</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 55,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 72,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500" alt="Pizza Pepperoni" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Pepperoni</h3>
+                            <p class="pizza-desc">Molho de tomate, mussarela e generosas fatias de pepperoni</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 58,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 75,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?w=500" alt="Pizza Frango com Catupiry" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Frango com Catupiry</h3>
+                            <p class="pizza-desc">Molho de tomate, mussarela, frango desfiado e catupiry</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 54,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 70,00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pizzas Doces -->
+            <div class="categoria">
+                <h2>🍫 Pizzas Doces</h2>
+                <div class="pizzas-grid">
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1606313564555-47f90f5c0c98?w=500" alt="Pizza de Chocolate" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Chocolate com Morango</h3>
+                            <p class="pizza-desc">Chocolate ao leite, morangos frescos e granulado</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 42,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 55,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1588315029754-2dd089d39a1a?w=500" alt="Pizza Romeu e Julieta" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Romeu e Julieta</h3>
+                            <p class="pizza-desc">Mussarela e goiabada derretida</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 40,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 52,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pizza-card">
+                        <img src="https://images.unsplash.com/photo-1627934586510-c4e4b4ff3cbb?w=500" alt="Pizza Banana Nevada" class="pizza-img">
+                        <div class="pizza-info">
+                            <h3 class="pizza-nome">Banana Nevada</h3>
+                            <p class="pizza-desc">Banana, canela, açúcar e leite condensado</p>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Média (6 fatias)</span>
+                                <span class="preco">R$ 38,00</span>
+                            </div>
+                            <div class="pizza-preco">
+                                <span class="tamanho">Grande (8 fatias)</span>
+                                <span class="preco">R$ 50,00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <h3>Pizzaria Bella Massa</h3>
+        <div class="contato">
+            <p>📞 Telefone: (48) 3333-4444</p>
+            <p>📍 Endereço: Rua das Pizzas, 123 - Balneário Rincão, SC</p>
+            <p>🕐 Horário: Ter-Dom, 18h às 23h</p>
+            <p style="margin-top: 1rem;">🛵 Delivery disponível!</p>
+        </div>
+    </footer>
+</body>
+</html>
