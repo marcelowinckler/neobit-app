@@ -19,7 +19,7 @@ export default function ChatInput({ disabled }) {
     if (!value.trim()) return
     let msg = value
     if (/^\/dev\b/i.test(msg.trim())) {
-      msg = msg.trim() + ' faça com tailwind de forma moderna e estilosa'
+      msg = msg.trim() + ' faça com tailwind de forma moderna e estilosa. nao coloque textos a mais como "Aqui está o HTML completo de uma landing page moderna e estilosa para uma pizzaria italiana, utilizando apenas Tailwind CSS via CDN:" deixe apenas o site puro, estilo e moderno, sem texto explicativos da sua parte'
     }
     sendMessage(msg)
     setValue('')
