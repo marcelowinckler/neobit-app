@@ -17,7 +17,11 @@ export default function ChatInput({ disabled }) {
 
   function onSend() {
     if (!value.trim()) return
-    sendMessage(value)
+    let msg = value
+    if (/^\/dev\b/i.test(msg.trim())) {
+      msg = msg.trim() + ' faça com tailwind de forma moderna e estilosa'
+    }
+    sendMessage(msg)
     setValue('')
   }
 
