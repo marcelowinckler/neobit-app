@@ -88,6 +88,13 @@ app.get('/api/proxy-image', (req, res) => {
   }
   fetchOnce(target)
 })
+
+// Middleware de log global para debug
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`)
+  next()
+})
+
 app.use('/uploads', express.static(UPLOADS_DIR))
 
 app.use(
@@ -105,6 +112,8 @@ app.use(
 )
 
 const db = new sqlite3.Database(DB_PATH)
+db.configure('busyTimeout', 5000)
+db.run('PRAGMA journal_mode = WAL;')
 
 db.serialize(() => {
   db.run(
@@ -186,33 +195,62 @@ function findUserById(id) {
 
 function createUser({ email, name, password }) {
   return new Promise((resolve, reject) => {
-    const hash = bcrypt.hashSync(password, 10)
-    const now = Date.now()
-    db.run(
-      'INSERT INTO users (email, name, password_hash, created_at) VALUES (?, ?, ?, ?)',
-      [email, name || null, hash, now],
-      function (err) {
-        if (err) reject(err)
-        else resolve({ id: this.lastID, email, name: name || null, created_at: now })
-      }
-    )
+    try {
+      const hash = bcrypt.hashSync(password, 10)
+      const now = Date.now()
+      db.run(
+        'INSERT INTO users (email, name, password_hash, created_at) VALUES (?, ?, ?, ?)',
+        [email, name || null, hash, now],
+        function (err) {
+          if (err) {
+            console.error('[DB INSERT ERROR]', err)
+            reject(err)
+          } else {
+            resolve({ id: this.lastID, email, name: name || null, created_at: now })
+          }
+        }
+      )
+    } catch (err) {
+      console.error('[BCRYPT ERROR]', err)
+      reject(err)
+    }
   })
 }
 
 app.post('/api/auth/signup', async (req, res) => {
   try {
+    console.log('[Signup] Request received')
     const { email, password, name } = req.body || {}
+    console.log('[Signup] Payload:', { email, name, password: password ? '***' : 'missing' })
+
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' })
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'Dados inválidos' })
     if (password.length < 6) return res.status(400).json({ error: 'Senha precisa ter pelo menos 6 caracteres' })
+    
+    console.log('[Signup] Checking existing user...')
     const existing = await findUserByEmail(email)
-    if (existing) return res.status(409).json({ error: 'Email já cadastrado' })
+    if (existing) {
+      console.log('[Signup] User already exists')
+      return res.status(409).json({ error: 'Email já cadastrado' })
+    }
+    
+    console.log('[Signup] Creating user...')
     const user = await createUser({ email, name, password })
-    req.session.userId = user.id
+    console.log('[Signup] User created:', user.id)
+
+    if (req.session) {
+      req.session.userId = user.id
+      console.log('[Signup] Session set')
+    } else {
+      console.error('[Signup] req.session is undefined!')
+      // Don't fail the request, just warn? Or fail?
+      // If session is missing, login won't work.
+    }
+
     res.json({ user })
   } catch (e) {
-    console.error('Signup error:', e)
-    res.status(500).json({ error: e.message || 'Erro interno' })
+    console.error('Signup error details:', e)
+    res.status(500).json({ error: `Erro interno: ${e.message}`, details: e.toString() })
   }
 })
 
@@ -508,6 +546,19 @@ if (fs.existsSync(DIST_DIR)) {
     res.sendFile(path.join(DIST_DIR, 'index.html'))
   })
 }
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('[Global Error Handler]', err)
+  if (res.headersSent) {
+    return next(err)
+  }
+  res.status(500).json({ 
+    error: 'Erro interno do servidor', 
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+  })
+})
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[server] listening on http://0.0.0.0:${PORT}`)

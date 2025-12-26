@@ -3,6 +3,8 @@ dist
 .env
 *.sqlite
 *.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 server/uploads/*
 !server/uploads/.gitkeep
 .DS_Store
