@@ -38,7 +38,7 @@ export default function AppShell() {
             <div className="h-8 w-8 rounded-xl bg-brand-600 text-white grid place-items-center">
             <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4"><path d="M12 3l8 4-8 4-8-4 8-4zM4 10l8 4 8-4v7l-8 4-8-4v-7z" stroke="currentColor" strokeWidth="1.5"/></svg>
             </div>
-            <div className="font-semibold text-gray-900 dark:text-gray-100">NeoBit</div>
+            <div className="font-semibold text-gray-900 dark:text-gray-100">MatrixBit</div>
           </NavLink>
         </div>
         <div className="flex items-center gap-3">
