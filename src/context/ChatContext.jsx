@@ -409,7 +409,7 @@ export function ChatProvider({ children }) {
         // If not JSON, try text
         const text = await res.text().catch(() => '')
         console.error('Signup failed (non-JSON):', text)
-        errorMessage = `Erro servidor: ${res.status}`
+        errorMessage = `Erro servidor: ${res.status} ${text ? `(${text.slice(0, 100)})` : ''}`
       }
       throw new Error(errorMessage)
     }

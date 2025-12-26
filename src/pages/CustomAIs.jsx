@@ -35,7 +35,7 @@ export default function CustomAIs() {
             <div className="text-xs text-gray-600 dark:text-gray-400">{ai.short_desc}</div>
             <div className="mt-3 flex gap-2">
               <button className="px-3 py-2 text-sm rounded-md border bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50" onClick={() => navigate(`/home/custom-ais/${ai.id}/edit`)}>{t('edit')}</button>
-              <button className="px-3 py-2 text-sm rounded-md bg-brand-600 text-white" onClick={() => { createConversationWithAI(ai); navigate('/home/chats') }}>{t('open')}</button>
+              <button className="px-3 py-2 text-sm rounded-md bg-brand-600 dark:bg-gray-700 text-white" onClick={() => { createConversationWithAI(ai); navigate('/home/chats') }}>{t('open')}</button>
               <button className="px-3 py-2 text-sm rounded-md border bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50" onClick={async () => {
                 try {
                   const res = await fetch(`/api/ais/${ai.id}`, { method: 'DELETE', credentials: 'include' })

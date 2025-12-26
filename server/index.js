@@ -243,14 +243,14 @@ app.post('/api/auth/signup', async (req, res) => {
       console.log('[Signup] Session set')
     } else {
       console.error('[Signup] req.session is undefined!')
-      // Don't fail the request, just warn? Or fail?
-      // If session is missing, login won't work.
     }
 
     res.json({ user })
   } catch (e) {
-    console.error('Signup error details:', e)
-    res.status(500).json({ error: `Erro interno: ${e.message}`, details: e.toString() })
+    console.error('[Signup Error] Details:', e)
+    if (!res.headersSent) {
+      res.status(500).json({ error: `Erro ao cadastrar: ${e.message || e.toString()}` })
+    }
   }
 })
 

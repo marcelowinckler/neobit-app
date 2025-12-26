@@ -31,11 +31,11 @@ export default function Marketplace() {
             {ai.image_url ? (
               <img src={ai.image_url} alt={ai.name} className="h-24 w-full object-cover rounded-xl" />
             ) : (
-              <div className="h-24 rounded-xl bg-gradient-to-br from-brand-200 to-brand-400" />
+              <div className="h-24 rounded-xl bg-gradient-to-br from-brand-200 to-brand-400 dark:from-gray-800 dark:to-gray-900" />
             )}
             <div className="mt-3 text-sm font-medium">{ai.name}</div>
             <div className="text-xs text-gray-600 dark:text-gray-400">{ai.short_desc} - {ai.model}</div>
-            <button className="mt-3 px-3 py-2 text-sm rounded-md bg-brand-600 text-white" onClick={() => { createConversationWithAI(ai); navigate('/home/chats') }}>{t('use_ai')}</button>
+            <button className="mt-3 px-3 py-2 text-sm rounded-md bg-brand-600 dark:bg-gray-700 text-white" onClick={() => { createConversationWithAI(ai); navigate('/home/chats') }}>{t('use_ai')}</button>
           </div>
         ))}
         {ais.length === 0 && (
