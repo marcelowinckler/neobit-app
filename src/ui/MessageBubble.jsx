@@ -2,7 +2,7 @@ export default function MessageBubble({ role, content }) {
   const isUser = role === 'user'
   async function handleDownload(src) {
     try {
-      const url = src.startsWith('/uploads/') ? `http://localhost:3001${src}` : src
+      const url = src
       if (url.startsWith('data:image')) {
         const parts = url.split(',')
         const mime = (parts[0].match(/data:(.*?);/) || [])[1] || 'image/png'
@@ -36,7 +36,7 @@ export default function MessageBubble({ role, content }) {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       {typeof content === 'string' && ((content.startsWith('data:image') || content.startsWith('http') || content.startsWith('/uploads/'))) && !isUser ? (
         <div className="relative max-w-md">
-          <img src={content.startsWith('/uploads/') ? `http://localhost:3001${content}` : content} alt="image" className="w-full max-w-md max-h-64 rounded-xl object-cover border dark:border-gray-800" />
+          <img src={content} alt="image" className="w-full max-w-md max-h-64 rounded-xl object-cover border dark:border-gray-800" />
           <button onClick={() => handleDownload(content)} className="absolute top-2 right-2 px-3 py-1 rounded-full bg-black/50 text-white text-xs backdrop-blur hover:bg-black/60">
             Baixar
           </button>

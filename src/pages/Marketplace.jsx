@@ -29,7 +29,7 @@ export default function Marketplace() {
         {ais.map(ai => (
           <div key={ai.id} className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-4">
             {ai.image_url ? (
-              <img src={ai.image_url.startsWith('/uploads/') ? `http://localhost:3001${ai.image_url}` : ai.image_url} alt={ai.name} className="h-24 w-full object-cover rounded-xl" />
+              <img src={ai.image_url} alt={ai.name} className="h-24 w-full object-cover rounded-xl" />
             ) : (
               <div className="h-24 rounded-xl bg-gradient-to-br from-brand-200 to-brand-400" />
             )}

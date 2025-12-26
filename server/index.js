@@ -763,10 +763,10 @@ app.post('/api/dev/generate', async (req, res) => {
     const { prompt, base_html, mode } = req.body || {}
     if (!prompt) return res.status(400).json({ error: 'Prompt obrigatório' })
     const html = await generateHTMLFromPrompt({ prompt, baseHtml: base_html || loadExampleHTML() || null, provider: 'claude', mode })
-    const name = `generated/dev-${Date.now()}-${Math.random().toString(36).slice(2)}.html`
-    const filePath = path.join(UPLOADS_DIR, name.replace('generated/', 'generated\\'))
+    const filename = `dev-${Date.now()}-${Math.random().toString(36).slice(2)}.html`
+    const filePath = path.join(GEN_DIR, filename)
     fs.writeFileSync(filePath, html, 'utf8')
-    res.json({ url: `/uploads/${name}`, html })
+    res.json({ url: `/uploads/generated/${filename}`, html })
   } catch (e) {
     res.status(500).json({ error: e.message || 'Erro interno' })
   }
@@ -907,10 +907,10 @@ function callOpenAIImage({ prompt, size, model, response_format, quality }) {
           const url = item.url || null
           if (b64) {
             const buf = Buffer.from(b64, 'base64')
-            const name = `generated/${Date.now()}-${Math.random().toString(36).slice(2)}.png`
-            const filePath = path.join(UPLOADS_DIR, name.replace('generated/', 'generated\\'))
+            const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.png`
+            const filePath = path.join(GEN_DIR, filename)
             fs.writeFileSync(filePath, buf)
-            resolve({ image_url: `/uploads/${name}` })
+            resolve({ image_url: `/uploads/generated/${filename}` })
           } else if (url) {
             resolve({ image_url: url })
           } else {
