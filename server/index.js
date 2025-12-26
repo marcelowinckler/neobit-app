@@ -653,8 +653,9 @@ function callClaude({ messages, model, temperature }) {
 function generateHTMLFromPrompt({ prompt, baseHtml, provider, mode }) {
   return new Promise(async (resolve, reject) => {
     try {
-      const wantsTailwind = /tailwind|lovable/i.test(String(prompt || ''))
       const isEdit = mode === 'edit'
+      // Always enable Tailwind logic for new creations, or if explicitly requested in edit
+      const wantsTailwind = !isEdit || /tailwind|lovable/i.test(String(prompt || ''))
       
       let systemPrompt = ''
       let userContent = ''
