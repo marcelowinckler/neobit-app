@@ -117,6 +117,48 @@ db.configure('busyTimeout', 5000)
 db.run('PRAGMA journal_mode = WAL;')
 console.log('[server] DB path:', DB_PATH)
 
+// Seed automático do admin no boot (idempotente)
+function ensureAdminSeed() {
+  try {
+    const email = (process.env.ADMIN_EMAIL || 'matrixbit@gmail.com').trim()
+    const name = process.env.ADMIN_NAME || 'Admin MatrixBit'
+    const password = process.env.ADMIN_PASSWORD || 'matrixbitoficial'
+    const resetOnStart = String(process.env.ADMIN_PASSWORD_RESET_ON_START || 'false').toLowerCase() === 'true'
+    const now = Date.now()
+    const hash = bcrypt.hashSync(password, 10)
+    db.get('SELECT id, email FROM users WHERE LOWER(email) = LOWER(?)', [email], (err, row) => {
+      if (err) {
+        console.error('[admin seed] erro ao checar admin:', err.message)
+        return
+      }
+      if (!row) {
+        db.run(
+          'INSERT INTO users (email, name, password_hash, created_at) VALUES (?, ?, ?, ?)',
+          [email, name, hash, now],
+          err2 => {
+            if (err2) console.error('[admin seed] erro ao criar admin:', err2.message)
+            else console.log('[admin seed] admin criado:', email)
+          }
+        )
+      } else if (resetOnStart) {
+        db.run(
+          'UPDATE users SET password_hash = ?, name = ? WHERE id = ?',
+          [hash, name, row.id],
+          err3 => {
+            if (err3) console.error('[admin seed] erro ao atualizar admin:', err3.message)
+            else console.log('[admin seed] admin atualizado (reset de senha):', email)
+          }
+        )
+      } else {
+        console.log('[admin seed] admin já existe, sem alterações:', email)
+      }
+    })
+  } catch (e) {
+    console.error('[admin seed] erro inesperado:', e?.message || e)
+  }
+}
+ensureAdminSeed()
+
 db.serialize(() => {
   db.run(
     `CREATE TABLE IF NOT EXISTS users (
@@ -306,6 +348,15 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (e) {
     console.error('Login error:', e)
     res.status(500).json({ error: e.message || 'Erro interno' })
+  }
+})
+
+// Healthcheck simples para produção
+app.get('/api/health', (req, res) => {
+  try {
+    res.json({ status: 'ok', db_path: DB_PATH })
+  } catch (e) {
+    res.status(500).json({ status: 'error' })
   }
 })
 
