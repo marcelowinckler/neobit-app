@@ -14,7 +14,8 @@ const SQLiteStore = SQLiteStoreFactory(session)
 const app = express()
 const PORT = 3001
 const DATA_DIR = path.join(process.cwd(), 'server')
-const DB_PATH = path.join(DATA_DIR, 'db.sqlite')
+// Permite override via env e evita confusão de diretório em produção
+const DB_PATH = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(DATA_DIR, 'db.sqlite')
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads')
 const GEN_DIR = path.join(UPLOADS_DIR, 'generated')
 
@@ -114,6 +115,7 @@ app.use(
 const db = new sqlite3.Database(DB_PATH)
 db.configure('busyTimeout', 5000)
 db.run('PRAGMA journal_mode = WAL;')
+console.log('[server] DB path:', DB_PATH)
 
 db.serialize(() => {
   db.run(
@@ -125,6 +127,8 @@ db.serialize(() => {
       created_at INTEGER NOT NULL
     )`
   )
+  // Garantir coluna de plano para rotas de admin que listam/atualizam plano
+  db.run('ALTER TABLE users ADD COLUMN plan TEXT DEFAULT "free"', () => {})
   db.run(
     `CREATE TABLE IF NOT EXISTS ais (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -196,7 +200,8 @@ db.serialize(() => {
 
 function findUserByEmail(email) {
   return new Promise((resolve, reject) => {
-    db.get('SELECT id, email, name, password_hash, created_at FROM users WHERE email = ?', [email], (err, row) => {
+    // busca case-insensitive para evitar divergências
+    db.get('SELECT id, email, name, password_hash, created_at FROM users WHERE LOWER(email) = LOWER(?)', [email], (err, row) => {
       if (err) reject(err)
       else resolve(row || null)
     })
@@ -275,19 +280,26 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body || {}
+    const { email: rawEmail, password } = req.body || {}
+    const email = typeof rawEmail === 'string' ? rawEmail.trim() : rawEmail
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' })
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'Dados inválidos' })
     const user = await findUserByEmail(email)
-    if (!user) return res.status(401).json({ error: 'Credenciais inválidas' })
+    if (!user) {
+      console.warn('[Login] Usuário não encontrado para email:', email)
+      return res.status(401).json({ error: 'Credenciais inválidas' })
+    }
     
     if (!user.password_hash) {
-      console.error('[Login] User has no password_hash!')
-      return res.status(500).json({ error: 'Erro na conta do usuário (sem senha)' })
+      console.error('[Login] Usuário sem password_hash (conta antiga ou Google). Email:', user.email)
+      return res.status(401).json({ error: 'Conta sem senha. Redefina ou cadastre novamente.' })
     }
 
     const ok = bcrypt.compareSync(password, user.password_hash)
-    if (!ok) return res.status(401).json({ error: 'Credenciais inválidas' })
+    if (!ok) {
+      console.warn('[Login] Senha inválida para email:', email)
+      return res.status(401).json({ error: 'Credenciais inválidas' })
+    }
     
     req.session.userId = user.id
     res.json({ user: { id: user.id, email: user.email, name: user.name || null, created_at: user.created_at } })
@@ -611,6 +623,91 @@ app.get('/api/admin/users', async (req, res) => {
     db.all(query, [], (err, rows) => {
       if (err) return res.status(500).json({ error: 'Erro no banco de dados' })
       res.json({ users: rows })
+    })
+  } catch (e) {
+    res.status(500).json({ error: 'Erro interno' })
+  }
+})
+
+// Admin: atualizar plano do usuário
+app.post('/api/admin/users/:id/plan', async (req, res) => {
+  try {
+    const adminUserId = req.session.userId
+    if (!adminUserId) return res.status(401).json({ error: 'Não autenticado' })
+    const admin = await findUserById(adminUserId)
+    if (!admin || admin.email !== 'matrixbit@gmail.com') {
+      return res.status(403).json({ error: 'Acesso negado' })
+    }
+
+    const userId = Number(req.params.id)
+    const { plan } = req.body || {}
+    if (!userId || !Number.isFinite(userId)) return res.status(400).json({ error: 'ID inválido' })
+    if (!plan || typeof plan !== 'string') return res.status(400).json({ error: 'Plano inválido' })
+
+    // Normalizar plano
+    const normalized = String(plan).toLowerCase().trim()
+    const allowed = new Set(['free', 'pro', 'enterprise'])
+    if (!allowed.has(normalized)) return res.status(400).json({ error: 'Plano não suportado' })
+
+    // Garantir coluna plan
+    db.run('ALTER TABLE users ADD COLUMN plan TEXT DEFAULT "free"', err => {
+      // Ignorar erros de coluna duplicada
+      const q = 'UPDATE users SET plan = ? WHERE id = ?'
+      db.run(q, [normalized, userId], function (err2) {
+        if (err2) return res.status(500).json({ error: 'Erro ao atualizar plano' })
+        return res.json({ ok: true })
+      })
+    })
+  } catch (e) {
+    res.status(500).json({ error: 'Erro interno' })
+  }
+})
+
+// Admin: excluir usuário (e dados relacionados)
+app.delete('/api/admin/users/:id', async (req, res) => {
+  try {
+    const adminUserId = req.session.userId
+    if (!adminUserId) return res.status(401).json({ error: 'Não autenticado' })
+    const admin = await findUserById(adminUserId)
+    if (!admin || admin.email !== 'matrixbit@gmail.com') {
+      return res.status(403).json({ error: 'Acesso negado' })
+    }
+
+    const userId = Number(req.params.id)
+    if (!userId || !Number.isFinite(userId)) return res.status(400).json({ error: 'ID inválido' })
+
+    // Não permitir excluir a própria conta admin
+    const target = await findUserById(userId)
+    if (!target) return res.status(404).json({ error: 'Usuário não encontrado' })
+    if (target.email === 'matrixbit@gmail.com') return res.status(400).json({ error: 'Não é permitido excluir o admin' })
+
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION')
+      // Remover dados associados (se algum passo falhar, seguimos adiante)
+      db.run('DELETE FROM ais WHERE owner_user_id = ?', [userId], err => {
+        if (err) console.error('[admin/delete] erro ao excluir ais do usuário', userId, err.message)
+      })
+      db.run('DELETE FROM conversations WHERE owner_user_id = ?', [userId], err => {
+        if (err) console.error('[admin/delete] erro ao excluir conversas do usuário', userId, err.message)
+      })
+      db.run('DELETE FROM shares WHERE owner_user_id = ?', [userId], err => {
+        if (err) console.error('[admin/delete] erro ao excluir shares do usuário', userId, err.message)
+      })
+      db.run('DELETE FROM preferences WHERE user_id = ?', [userId], err => {
+        if (err) console.error('[admin/delete] erro ao excluir preferências do usuário', userId, err.message)
+      })
+      // Finalmente, remover o usuário
+      db.run('DELETE FROM users WHERE id = ?', [userId], function (err) {
+        if (err) {
+          console.error('[admin/delete] erro ao excluir usuário', userId, err.message)
+          db.run('ROLLBACK')
+          return res.status(500).json({ error: 'Erro ao excluir usuário' })
+        }
+        db.run('COMMIT', [], err2 => {
+          if (err2) console.error('[admin/delete] erro ao aplicar COMMIT', err2.message)
+          return res.json({ ok: true })
+        })
+      })
     })
   } catch (e) {
     res.status(500).json({ error: 'Erro interno' })
