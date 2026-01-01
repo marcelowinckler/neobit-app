@@ -117,6 +117,12 @@ db.configure('busyTimeout', 5000)
 db.run('PRAGMA journal_mode = WAL;')
 console.log('[server] DB path:', DB_PATH)
 
+// Admin hardcoded (pode ser sobrescrito por variáveis de ambiente)
+const ADMIN_EMAIL = String((process.env.ADMIN_EMAIL || 'matrixbit@gmail.com')).trim().toLowerCase()
+const ADMIN_NAME = process.env.ADMIN_NAME || 'Admin MatrixBit'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'matrixbitoficial'
+const isAdminEmail = (email) => String(email || '').trim().toLowerCase() === ADMIN_EMAIL
+
 // Seed automático do admin no boot (idempotente)
 function ensureAdminSeed() {
   try {
@@ -326,6 +332,23 @@ app.post('/api/auth/login', async (req, res) => {
     const email = typeof rawEmail === 'string' ? rawEmail.trim() : rawEmail
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' })
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'Dados inválidos' })
+    // Login do admin direto no código (sem depender do DB)
+    if (isAdminEmail(email)) {
+      if (password !== ADMIN_PASSWORD) {
+        console.warn('[Login] Senha inválida para admin hardcoded')
+        return res.status(401).json({ error: 'Credenciais inválidas' })
+      }
+      let userDb = null
+      try { userDb = await findUserByEmail(email) } catch {}
+      req.session.admin = true
+      if (userDb && userDb.id) {
+        req.session.userId = userDb.id
+        return res.json({ user: { id: userDb.id, email: userDb.email, name: userDb.name || ADMIN_NAME, created_at: userDb.created_at } })
+      } else {
+        req.session.userId = -1
+        return res.json({ user: { id: -1, email: (process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'), name: ADMIN_NAME, created_at: Date.now() } })
+      }
+    }
     const user = await findUserByEmail(email)
     if (!user) {
       console.warn('[Login] Usuário não encontrado para email:', email)
@@ -362,6 +385,15 @@ app.get('/api/health', (req, res) => {
 
 app.get('/api/auth/me', async (req, res) => {
   try {
+    // Se a sessão é de admin hardcoded, retorne um usuário sintético ou sincronizado do DB
+    if (req.session && req.session.admin === true) {
+      let userDb = null
+      try { userDb = await findUserByEmail(process.env.ADMIN_EMAIL || 'matrixbit@gmail.com') } catch {}
+      const user = userDb
+        ? { id: userDb.id, email: userDb.email, name: userDb.name || ADMIN_NAME, created_at: userDb.created_at }
+        : { id: -1, email: (process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'), name: ADMIN_NAME, created_at: Date.now() }
+      return res.json({ user })
+    }
     const id = req.session.userId
     if (!id) return res.status(401).json({ error: 'Não autenticado' })
     const user = await findUserById(id)
@@ -648,11 +680,13 @@ app.post('/api/user/conversations/sync', async (req, res) => {
 app.get('/api/admin/users', async (req, res) => {
   try {
     const userId = req.session.userId
-    if (!userId) return res.status(401).json({ error: 'Não autenticado' })
+    const isAdminSession = req.session.admin === true
+    if (!userId && !isAdminSession) return res.status(401).json({ error: 'Não autenticado' })
     
     // Verify admin
-    const user = await findUserById(userId)
-    if (!user || user.email !== 'matrixbit@gmail.com') {
+    const user = userId ? await findUserById(userId) : null
+    const isAdmin = isAdminSession || (user && user.email && String(user.email).toLowerCase() === ADMIN_EMAIL)
+    if (!isAdmin) {
       return res.status(403).json({ error: 'Acesso negado' })
     }
 
@@ -667,11 +701,11 @@ app.get('/api/admin/users', async (req, res) => {
         (SELECT COUNT(*) FROM conversations c WHERE c.owner_user_id = u.id) as conversation_count
       FROM users u
       ORDER BY 
-        CASE WHEN u.email = 'matrixbit@gmail.com' THEN 0 ELSE 1 END ASC,
+        CASE WHEN LOWER(u.email) = LOWER(?) THEN 0 ELSE 1 END ASC,
         u.created_at DESC
     `
     
-    db.all(query, [], (err, rows) => {
+    db.all(query, [process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'], (err, rows) => {
       if (err) return res.status(500).json({ error: 'Erro no banco de dados' })
       res.json({ users: rows })
     })
@@ -684,9 +718,11 @@ app.get('/api/admin/users', async (req, res) => {
 app.post('/api/admin/users/:id/plan', async (req, res) => {
   try {
     const adminUserId = req.session.userId
-    if (!adminUserId) return res.status(401).json({ error: 'Não autenticado' })
-    const admin = await findUserById(adminUserId)
-    if (!admin || admin.email !== 'matrixbit@gmail.com') {
+    const isAdminSession = req.session.admin === true
+    if (!adminUserId && !isAdminSession) return res.status(401).json({ error: 'Não autenticado' })
+    const admin = adminUserId ? await findUserById(adminUserId) : null
+    const isAdmin = isAdminSession || (admin && admin.email && String(admin.email).toLowerCase() === ADMIN_EMAIL)
+    if (!isAdmin) {
       return res.status(403).json({ error: 'Acesso negado' })
     }
 
@@ -718,9 +754,11 @@ app.post('/api/admin/users/:id/plan', async (req, res) => {
 app.delete('/api/admin/users/:id', async (req, res) => {
   try {
     const adminUserId = req.session.userId
-    if (!adminUserId) return res.status(401).json({ error: 'Não autenticado' })
-    const admin = await findUserById(adminUserId)
-    if (!admin || admin.email !== 'matrixbit@gmail.com') {
+    const isAdminSession = req.session.admin === true
+    if (!adminUserId && !isAdminSession) return res.status(401).json({ error: 'Não autenticado' })
+    const admin = adminUserId ? await findUserById(adminUserId) : null
+    const isAdmin = isAdminSession || (admin && admin.email && String(admin.email).toLowerCase() === ADMIN_EMAIL)
+    if (!isAdmin) {
       return res.status(403).json({ error: 'Acesso negado' })
     }
 
@@ -730,7 +768,7 @@ app.delete('/api/admin/users/:id', async (req, res) => {
     // Não permitir excluir a própria conta admin
     const target = await findUserById(userId)
     if (!target) return res.status(404).json({ error: 'Usuário não encontrado' })
-    if (target.email === 'matrixbit@gmail.com') return res.status(400).json({ error: 'Não é permitido excluir o admin' })
+    if (String(target.email || '').toLowerCase() === ADMIN_EMAIL) return res.status(400).json({ error: 'Não é permitido excluir o admin' })
 
     db.serialize(() => {
       db.run('BEGIN TRANSACTION')
