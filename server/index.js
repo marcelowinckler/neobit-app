@@ -149,6 +149,25 @@ db.serialize(() => {
     }
   })
   
+  db.run('ALTER TABLE users ADD COLUMN plan TEXT DEFAULT "free"', err => {
+    if (err && !err.message.includes('duplicate column')) {
+      // console.error('Migration warning (users.plan):', err.message)
+    }
+  })
+
+  db.run(
+    `CREATE TABLE IF NOT EXISTS conversations (
+      id TEXT PRIMARY KEY,
+      owner_user_id INTEGER NOT NULL,
+      title TEXT,
+      model TEXT,
+      ai_id INTEGER,
+      created_at INTEGER,
+      updated_at INTEGER,
+      FOREIGN KEY(owner_user_id) REFERENCES users(id)
+    )`
+  )
+
   // Backfill created_at for users who have it as NULL
   db.run('UPDATE users SET created_at = ? WHERE created_at IS NULL', [Date.now()])
 
@@ -261,8 +280,15 @@ app.post('/api/auth/login', async (req, res) => {
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'Dados inválidos' })
     const user = await findUserByEmail(email)
     if (!user) return res.status(401).json({ error: 'Credenciais inválidas' })
+    
+    if (!user.password_hash) {
+      console.error('[Login] User has no password_hash!')
+      return res.status(500).json({ error: 'Erro na conta do usuário (sem senha)' })
+    }
+
     const ok = bcrypt.compareSync(password, user.password_hash)
     if (!ok) return res.status(401).json({ error: 'Credenciais inválidas' })
+    
     req.session.userId = user.id
     res.json({ user: { id: user.id, email: user.email, name: user.name || null, created_at: user.created_at } })
   } catch (e) {
@@ -531,6 +557,63 @@ app.post('/api/chat/title', async (req, res) => {
     res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ error: e.message || 'Erro interno' })
+  }
+})
+
+app.post('/api/user/conversations/sync', async (req, res) => {
+  try {
+    const userId = req.session.userId
+    if (!userId) return res.status(401).json({ error: 'Não autenticado' })
+    const { conversations } = req.body || {}
+    if (!Array.isArray(conversations)) return res.json({ ok: true })
+    
+    db.serialize(() => {
+      const stmt = db.prepare(`INSERT OR REPLACE INTO conversations (id, owner_user_id, title, model, ai_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      conversations.forEach(c => {
+        // Only sync basic metadata
+        stmt.run(String(c.id), userId, c.title || 'Novo Chat', c.model || null, c.aiId || null, c.createdAt || Date.now(), Date.now())
+      })
+      stmt.finalize()
+    })
+    res.json({ ok: true })
+  } catch (e) {
+    console.error('Sync error:', e)
+    res.status(500).json({ error: 'Erro ao sincronizar' })
+  }
+})
+
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const userId = req.session.userId
+    if (!userId) return res.status(401).json({ error: 'Não autenticado' })
+    
+    // Verify admin
+    const user = await findUserById(userId)
+    if (!user || user.email !== 'matrixbit@gmail.com') {
+      return res.status(403).json({ error: 'Acesso negado' })
+    }
+
+    const query = `
+      SELECT 
+        u.id, 
+        u.email, 
+        u.name, 
+        u.created_at,
+        u.plan,
+        (SELECT COUNT(*) FROM ais a WHERE a.owner_user_id = u.id) as ai_count,
+        (SELECT COUNT(*) FROM conversations c WHERE c.owner_user_id = u.id) as conversation_count
+      FROM users u
+      ORDER BY 
+        CASE WHEN u.email = 'matrixbit@gmail.com' THEN 0 ELSE 1 END ASC,
+        u.created_at DESC
+    `
+    
+    db.all(query, [], (err, rows) => {
+      if (err) return res.status(500).json({ error: 'Erro no banco de dados' })
+      res.json({ users: rows })
+    })
+  } catch (e) {
+    res.status(500).json({ error: 'Erro interno' })
   }
 })
 
