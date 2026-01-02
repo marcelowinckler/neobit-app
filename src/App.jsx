@@ -12,6 +12,7 @@ import Settings from './pages/Settings'
 import Plans from './pages/Plans'
 import EditAI from './pages/EditAI'
 import Share from './pages/Share'
+import AdminDashboard from './pages/AdminDashboard'
 import { ChatProvider, useChat } from './context/ChatContext'
 
 function ProtectedRoute({ children }) {
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="create-ai" element={<CreateAI />} />
           <Route path="plans" element={<Plans />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="admin" element={<AdminDashboard />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

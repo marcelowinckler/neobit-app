@@ -126,6 +126,21 @@ export function ChatProvider({ children }) {
     })()
   }, [])
 
+  // Sync conversations to server
+  useEffect(() => {
+    if (authReady && user && conversations.length > 0) {
+      const timer = setTimeout(() => {
+        fetch('/api/user/conversations/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ conversations })
+        }).catch(() => {})
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [conversations, user, authReady])
+
   function createConversation() {
     const id = uid()
     const nextIndex = (conversations?.length || 0) + 1
