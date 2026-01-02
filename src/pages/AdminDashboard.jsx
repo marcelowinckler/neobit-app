@@ -16,7 +16,7 @@ export default function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('/api/admin/users')
+      const res = await fetch('/api/admin/users', { credentials: 'include' })
       if (!res.ok) {
         if (res.status === 403) throw new Error('Acesso negado')
         throw new Error('Erro ao carregar usuários')
@@ -158,9 +158,9 @@ export default function AdminDashboard() {
                         </button>
                         <button
                           onClick={() => deleteUser(u.id)}
-                          disabled={deleting === u.id || u.email === 'matrixbit@gmail.com'}
+                          disabled={deleting === u.id || u.is_admin}
                           className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded disabled:opacity-50"
-                          title={u.email === 'matrixbit@gmail.com' ? 'Admin não pode ser excluído' : ''}
+                          title={u.is_admin ? 'Admin não pode ser excluído' : ''}
                         >
                           {deleting === u.id ? 'Excluindo...' : 'Excluir'}
                         </button>

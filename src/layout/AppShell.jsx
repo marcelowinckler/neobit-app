@@ -68,6 +68,14 @@ export default function AppShell() {
           <SidebarLink onClick={() => setShowSidebar(false)} to="/home/marketplace" label={t('marketplace')} icon={<svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M3 7h18l-2 10H5L3 7zm5 13a2 2 0 104 0H8z" stroke="currentColor" strokeWidth="1.5"/></svg>} />
           <SidebarLink onClick={() => setShowSidebar(false)} to="/home/create-ai" label={t('create_ai')} icon={<svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5"/></svg>} />
           <SidebarLink onClick={() => setShowSidebar(false)} to="/home/plans" label={t('plans')} icon={<svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M4 7h16v12H4V7zm2-2h12v2H6V5z" stroke="currentColor" strokeWidth="1.5"/></svg>} />
+          {user?.is_admin && (
+            <SidebarLink 
+              onClick={() => setShowSidebar(false)} 
+              to="/home/admin" 
+              label="Painel Admin" 
+              icon={<svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.5"><path d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>} 
+            />
+          )}
           <SidebarLink onClick={() => setShowSidebar(false)} to="/home/settings" label={t('settings')} icon={<svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zM4 12h2m12 0h2M6.5 6.5l1.4 1.4m8.2 8.2l1.4 1.4M6.5 17.5l1.4-1.4m8.2-8.2l1.4-1.4" stroke="currentColor" strokeWidth="1.5"/></svg>} />
         </aside>
         

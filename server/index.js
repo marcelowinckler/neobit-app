@@ -343,10 +343,10 @@ app.post('/api/auth/login', async (req, res) => {
       req.session.admin = true
       if (userDb && userDb.id) {
         req.session.userId = userDb.id
-        return res.json({ user: { id: userDb.id, email: userDb.email, name: userDb.name || ADMIN_NAME, created_at: userDb.created_at } })
+        return res.json({ user: { id: userDb.id, email: userDb.email, name: userDb.name || ADMIN_NAME, created_at: userDb.created_at, is_admin: true } })
       } else {
         req.session.userId = -1
-        return res.json({ user: { id: -1, email: (process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'), name: ADMIN_NAME, created_at: Date.now() } })
+        return res.json({ user: { id: -1, email: (process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'), name: ADMIN_NAME, created_at: Date.now(), is_admin: true } })
       }
     }
     const user = await findUserByEmail(email)
@@ -367,7 +367,9 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     req.session.userId = user.id
-    res.json({ user: { id: user.id, email: user.email, name: user.name || null, created_at: user.created_at } })
+    const isAdmin = isAdminEmail(user.email)
+    if (isAdmin) req.session.admin = true
+    res.json({ user: { id: user.id, email: user.email, name: user.name || null, created_at: user.created_at, is_admin: isAdmin } })
   } catch (e) {
     console.error('Login error:', e)
     res.status(500).json({ error: e.message || 'Erro interno' })
@@ -390,15 +392,15 @@ app.get('/api/auth/me', async (req, res) => {
       let userDb = null
       try { userDb = await findUserByEmail(process.env.ADMIN_EMAIL || 'matrixbit@gmail.com') } catch {}
       const user = userDb
-        ? { id: userDb.id, email: userDb.email, name: userDb.name || ADMIN_NAME, created_at: userDb.created_at }
-        : { id: -1, email: (process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'), name: ADMIN_NAME, created_at: Date.now() }
+        ? { id: userDb.id, email: userDb.email, name: userDb.name || ADMIN_NAME, created_at: userDb.created_at, is_admin: true }
+        : { id: -1, email: (process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'), name: ADMIN_NAME, created_at: Date.now(), is_admin: true }
       return res.json({ user })
     }
     const id = req.session.userId
     if (!id) return res.status(401).json({ error: 'Não autenticado' })
     const user = await findUserById(id)
     if (!user) return res.status(401).json({ error: 'Sessão inválida' })
-    res.json({ user })
+    res.json({ user: { ...user, is_admin: isAdminEmail(user.email) } })
   } catch (e) {
     res.status(500).json({ error: 'Erro interno' })
   }
@@ -698,14 +700,16 @@ app.get('/api/admin/users', async (req, res) => {
         u.created_at,
         u.plan,
         (SELECT COUNT(*) FROM ais a WHERE a.owner_user_id = u.id) as ai_count,
-        (SELECT COUNT(*) FROM conversations c WHERE c.owner_user_id = u.id) as conversation_count
+        (SELECT COUNT(*) FROM conversations c WHERE c.owner_user_id = u.id) as conversation_count,
+        CASE WHEN LOWER(u.email) = LOWER(?) THEN 1 ELSE 0 END AS is_admin
       FROM users u
       ORDER BY 
         CASE WHEN LOWER(u.email) = LOWER(?) THEN 0 ELSE 1 END ASC,
         u.created_at DESC
     `
     
-    db.all(query, [process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'], (err, rows) => {
+    const adminEmail = process.env.ADMIN_EMAIL || 'matrixbit@gmail.com'
+    db.all(query, [adminEmail, adminEmail], (err, rows) => {
       if (err) return res.status(500).json({ error: 'Erro no banco de dados' })
       res.json({ users: rows })
     })
