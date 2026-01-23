@@ -30,12 +30,12 @@ export default function CustomAIs() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {ais.map(ai => (
           <div key={ai.id} className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-4">
-            {ai.image_url && <img src={ai.image_url} alt={ai.name} className="h-20 w-full object-cover rounded-xl" />}
+            {ai.image_url && <img src={ai.image_url.startsWith('/uploads/') ? `http://localhost:3001${ai.image_url}` : ai.image_url} alt={ai.name} className="h-20 w-full object-cover rounded-xl" />}
             <div className="text-sm font-medium">{ai.name}</div>
             <div className="text-xs text-gray-600 dark:text-gray-400">{ai.short_desc}</div>
             <div className="mt-3 flex gap-2">
               <button className="px-3 py-2 text-sm rounded-md border bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50" onClick={() => navigate(`/home/custom-ais/${ai.id}/edit`)}>{t('edit')}</button>
-              <button className="px-3 py-2 text-sm rounded-md bg-brand-600 dark:bg-gray-700 text-white" onClick={() => { createConversationWithAI(ai); navigate('/home/chats') }}>{t('open')}</button>
+              <button className="px-3 py-2 text-sm rounded-md bg-brand-600 text-white" onClick={() => { createConversationWithAI(ai); navigate('/home/chats') }}>{t('open')}</button>
               <button className="px-3 py-2 text-sm rounded-md border bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50" onClick={async () => {
                 try {
                   const res = await fetch(`/api/ais/${ai.id}`, { method: 'DELETE', credentials: 'include' })

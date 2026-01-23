@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useChat } from '../context/ChatContext'
 
 export default function Sidebar({ onItemClick }) {
-  const { user, conversations, currentConversationId, selectConversation, createConversation, renameConversation, deleteConversation, t } = useChat()
+  const { conversations, currentConversationId, selectConversation, createConversation, renameConversation, deleteConversation, t } = useChat()
   const [editingId, setEditingId] = useState(null)
   const [tempTitle, setTempTitle] = useState('')
 
@@ -19,7 +18,7 @@ export default function Sidebar({ onItemClick }) {
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900">
-      <div className="p-3 space-y-2">
+      <div className="p-3">
         <button
           className="w-full bg-brand-600 dark:bg-gray-700 text-white rounded-md px-3 py-2 text-sm"
           onClick={handleCreate}

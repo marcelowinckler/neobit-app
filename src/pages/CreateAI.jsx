@@ -164,7 +164,7 @@ export default function CreateAI() {
             </label>
           </div>
         </div>
-        <button disabled={loading} onClick={onCreate} className="px-4 py-2 rounded-md bg-brand-600 dark:bg-gray-700 text-white disabled:opacity-50">{loading ? 'Criando...' : 'Criar'}</button>
+        <button disabled={loading} onClick={onCreate} className="px-4 py-2 rounded-md bg-brand-600 text-white disabled:opacity-50">{loading ? 'Criando...' : 'Criar'}</button>
       </div>
     </div>
   )

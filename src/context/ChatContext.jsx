@@ -126,21 +126,6 @@ export function ChatProvider({ children }) {
     })()
   }, [])
 
-  // Sync conversations to server
-  useEffect(() => {
-    if (authReady && user && conversations.length > 0) {
-      const timer = setTimeout(() => {
-        fetch('/api/user/conversations/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ conversations })
-        }).catch(() => {})
-      }, 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [conversations, user, authReady])
-
   function createConversation() {
     const id = uid()
     const nextIndex = (conversations?.length || 0) + 1
@@ -424,7 +409,7 @@ export function ChatProvider({ children }) {
         // If not JSON, try text
         const text = await res.text().catch(() => '')
         console.error('Signup failed (non-JSON):', text)
-        errorMessage = `Erro servidor: ${res.status} ${text ? `(${text.slice(0, 100)})` : ''}`
+        errorMessage = `Erro servidor: ${res.status}`
       }
       throw new Error(errorMessage)
     }

@@ -17,11 +17,7 @@ export default function ChatInput({ disabled }) {
 
   function onSend() {
     if (!value.trim()) return
-    let msg = value
-    if (/^\/dev\b/i.test(msg.trim())) {
-      msg = msg.trim() + ' faça com tailwind de forma moderna e estilosa. nao coloque textos a mais como "Aqui está o HTML completo de uma landing page moderna e estilosa para uma pizzaria italiana, utilizando apenas Tailwind CSS via CDN:" deixe apenas o site puro, estilo e moderno, sem texto explicativos da sua parte'
-    }
-    sendMessage(msg)
+    sendMessage(value)
     setValue('')
   }
 
@@ -66,7 +62,7 @@ export default function ChatInput({ disabled }) {
             </div>
           )}
           <div className="relative flex items-center gap-3">
-            <div className="flex-1 rounded-2xl ring-1 ring-brand-500 dark:ring-gray-700">
+            <div className="flex-1 rounded-2xl ring-1 ring-brand-500">
               <textarea
                 className="w-full resize-none rounded-2xl px-5 py-4 text-sm outline-none bg-white dark:bg-gray-800 dark:text-gray-100 h-32 overflow-y-auto shadow-sm"
                 rows={8}
@@ -79,7 +75,7 @@ export default function ChatInput({ disabled }) {
             <button
               onClick={onSend}
               disabled={disabled}
-              className="self-center px-4 py-3 rounded-xl bg-brand-600 dark:bg-gray-700 text-white disabled:opacity-50"
+              className="self-center px-4 py-3 rounded-xl bg-brand-600 text-white disabled:opacity-50"
             >
               {t('send')}
             </button>

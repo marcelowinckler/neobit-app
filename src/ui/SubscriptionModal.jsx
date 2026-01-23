@@ -11,6 +11,12 @@ export default function SubscriptionModal() {
       return
     }
 
+    // Admin não tem limite de trial
+    if (user.email === 'matrixbit@gmail.com') {
+      setShow(false)
+      return
+    }
+
     const check = () => {
       const now = Date.now()
       const diff = now - user.created_at

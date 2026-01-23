@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useChat } from '../context/ChatContext'
+import AIHorizontalCarousel from '../ui/AIHorizontalCarousel'
 
 export default function Home() {
   const { conversations, models, user } = useChat()
@@ -90,6 +91,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      <AIHorizontalCarousel />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="col-span-1 lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl p-6 border dark:border-gray-800">
           <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">Chats por dia (últimos 7)</div>

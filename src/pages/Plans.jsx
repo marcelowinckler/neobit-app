@@ -17,9 +17,9 @@ export default function Plans() {
             <li>Sincronização em múltiplos dispositivos</li>
             <li>Geração de imagens HD</li>
           </ul>
-          <Link to="/signup" className="mt-6 block text-center px-4 py-2 rounded-md bg-brand-600 dark:bg-gray-700 text-white text-sm hover:bg-brand-700">Assinar mensal</Link>
+          <a href="https://pay.kiwify.com.br/uxgXqEr" target="_blank" rel="noreferrer" className="mt-6 block text-center px-4 py-2 rounded-md bg-brand-600 text-white text-sm hover:bg-brand-700">Assinar mensal</a>
         </div>
-        <div className="rounded-2xl border bg-white dark:bg-gray-900 dark:border-gray-800 p-6 shadow-sm ring-2 ring-brand-500 dark:ring-gray-700">
+        <div className="rounded-2xl border bg-white dark:bg-gray-900 dark:border-gray-800 p-6 shadow-sm ring-2 ring-brand-500">
           <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Semestral</div>
           <div className="mt-1 text-2xl font-bold">R$499/6 meses</div>
           <ul className="mt-4 space-y-2 text-sm text-gray-700 dark:text-gray-200">
@@ -29,7 +29,7 @@ export default function Plans() {
             <li>Sincronização em múltiplos dispositivos</li>
             <li>Geração de imagens HD</li>
           </ul>
-          <Link to="/signup" className="mt-6 block text-center px-4 py-2 rounded-md bg-brand-600 dark:bg-gray-700 text-white text-sm hover:bg-brand-700">Assinar semestral</Link>
+          <a href="https://pay.kiwify.com.br/9xLVun2" target="_blank" rel="noreferrer" className="mt-6 block text-center px-4 py-2 rounded-md bg-brand-600 text-white text-sm hover:bg-brand-700">Assinar semestral</a>
         </div>
         <div className="rounded-2xl border bg-white dark:bg-gray-900 dark:border-gray-800 p-6 shadow-sm">
           <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Anual</div>
@@ -41,10 +41,9 @@ export default function Plans() {
             <li>Sincronização em múltiplos dispositivos</li>
             <li>Geração de imagens HD</li>
           </ul>
-          <Link to="/signup" className="mt-6 block text-center px-4 py-2 rounded-md bg-brand-600 dark:bg-gray-700 text-white text-sm hover:bg-brand-700">Assinar anual</Link>
+          <a href="https://pay.kiwify.com.br/KlRzdfy" target="_blank" rel="noreferrer" className="mt-6 block text-center px-4 py-2 rounded-md bg-brand-600 text-white text-sm hover:bg-brand-700">Assinar anual</a>
         </div>
       </div>
     </div>
   )
 }
-

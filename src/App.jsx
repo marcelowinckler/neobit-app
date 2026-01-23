@@ -3,7 +3,6 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AppShell from './layout/AppShell'
 import Home from './pages/Home'
-import Landing from './pages/Landing'
 import Chats from './pages/Chats'
 import Marketplace from './pages/Marketplace'
 import CustomAIs from './pages/CustomAIs'
@@ -12,7 +11,7 @@ import Settings from './pages/Settings'
 import Plans from './pages/Plans'
 import EditAI from './pages/EditAI'
 import Share from './pages/Share'
-import AdminDashboard from './pages/AdminDashboard'
+import Admin from './pages/Admin'
 import { ChatProvider, useChat } from './context/ChatContext'
 
 function ProtectedRoute({ children }) {
@@ -29,7 +28,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/share/:id" element={<Share />} />
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Login />} />
         <Route
           path="/home"
           element={
@@ -46,9 +45,9 @@ export default function App() {
           <Route path="create-ai" element={<CreateAI />} />
           <Route path="plans" element={<Plans />} />
           <Route path="settings" element={<Settings />} />
-          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="admin" element={<Admin />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </ChatProvider>
   )
