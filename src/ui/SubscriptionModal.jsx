@@ -17,7 +17,18 @@ export default function SubscriptionModal() {
       return
     }
 
+    // Usuários com plano ativo não veem modal de trial
+    if (user.subscription_end && new Date(user.subscription_end).getTime() > Date.now()) {
+      setShow(false)
+      return
+    }
+
     const check = () => {
+      // Lifetime (assinatura muito longa) também não mostra modal
+      if (user.plan === 'Lifetime') {
+        setShow(false)
+        return
+      }
       const now = Date.now()
       const diff = now - user.created_at
       // 1 day in milliseconds

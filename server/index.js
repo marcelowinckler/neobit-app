@@ -254,7 +254,7 @@ db.serialize(() => {
 
 function findUserByEmail(email) {
   return new Promise((resolve, reject) => {
-    db.get('SELECT id, email, name, password_hash, created_at, is_admin FROM users WHERE email = ?', [email], (err, row) => {
+    db.get('SELECT id, email, name, password_hash, created_at, is_admin, plan, subscription_end FROM users WHERE email = ?', [email], (err, row) => {
       if (err) reject(err)
       else resolve(row || null)
     })
@@ -263,7 +263,7 @@ function findUserByEmail(email) {
 
 function findUserById(id) {
   return new Promise((resolve, reject) => {
-    db.get('SELECT id, email, name, created_at, is_admin FROM users WHERE id = ?', [id], (err, row) => {
+    db.get('SELECT id, email, name, created_at, is_admin, plan, subscription_end FROM users WHERE id = ?', [id], (err, row) => {
       if (err) reject(err)
       else resolve(row || null)
     })
@@ -361,16 +361,15 @@ app.post('/api/auth/login', async (req, res) => {
     if (typeof user.password_hash !== 'string' || !user.password_hash) return res.status(401).json({ error: 'Credenciais inválidas' })
     const ok = bcrypt.compareSync(password, user.password_hash)
     if (!ok) return res.status(401).json({ error: 'Credenciais inválidas' })
-    if (!req.session || typeof req.session !== 'object') {
-      return res.status(500).json({ error: 'Sessão indisponível' })
-    }
-    req.session.userId = user.id
-    if (typeof req.session.save === 'function') {
-      req.session.save(() => {})
+    if (req.session && typeof req.session === 'object') {
+      req.session.userId = user.id
+      if (typeof req.session.save === 'function') {
+        req.session.save(() => {})
+      }
     }
     db.run('UPDATE users SET last_login_ip = ? WHERE id = ?', [ip, user.id])
     
-    res.json({ user: { id: user.id, email: user.email, name: user.name || null, created_at: user.created_at, is_admin: user.is_admin } })
+    res.json({ user: { id: user.id, email: user.email, name: user.name || null, created_at: user.created_at, is_admin: user.is_admin, plan: user.plan || null, subscription_end: user.subscription_end || null } })
   } catch (e) {
     console.error('Login error:', e)
     res.status(500).json({ error: e.message || 'Erro interno' })
@@ -440,7 +439,7 @@ app.post('/api/auth/google', async (req, res) => {
       db.run('UPDATE users SET signup_ip = ?, last_login_ip = ? WHERE id = ?', [ip, ip, user.id])
     }
     req.session.userId = user.id
-    res.json({ user: { id: user.id, email: user.email, name: user.name || name || null, created_at: user.created_at, is_admin: user.is_admin } })
+    res.json({ user: { id: user.id, email: user.email, name: user.name || name || null, created_at: user.created_at, is_admin: user.is_admin, plan: user.plan || null, subscription_end: user.subscription_end || null } })
   } catch (e) {
     res.status(500).json({ error: e.message || 'Erro interno' })
   }
