@@ -15,11 +15,23 @@ export default function CreateAI() {
   const [isPublic, setIsPublic] = useState(false)
   const [promptFiles, setPromptFiles] = useState([])
   const navigate = useNavigate()
+  const nameCount = name.length
+  const shortDescCount = shortDesc.length
+  const promptWordCount = (prompt.trim().match(/\S+/g) || []).length
+  const canCreate = !loading && name.trim().length >= 3 && shortDesc.trim().length >= 10 && prompt.trim().length >= 10
 
   async function onCreate() {
     setError('')
     if (!name.trim()) {
       setError('Nome é obrigatório')
+      return
+    }
+    if (shortDesc.trim().length < 10) {
+      setError('Descrição curta precisa ter pelo menos 10 caracteres')
+      return
+    }
+    if (prompt.trim().length < 10) {
+      setError('Prompt precisa ter pelo menos 10 caracteres')
       return
     }
     setLoading(true)
@@ -54,19 +66,35 @@ export default function CreateAI() {
   return (
     <div className="space-y-6">
       <div className="text-2xl font-semibold">Criar Nova AI</div>
-      <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-6 space-y-4 max-w-2xl">
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-6 space-y-4 lg:col-span-2">
         {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</div>}
         <div>
           <label className="text-sm">Nome</label>
           <input className="w-full border dark:border-gray-800 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100" placeholder="Ex: Analista Financeiro" value={name} onChange={e => setName(e.target.value)} />
+          <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-400">{nameCount}/50</div>
         </div>
         <div>
           <label className="text-sm">Descrição curta</label>
           <input className="w-full border dark:border-gray-800 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100" placeholder="Ex: Ajuda com análises" value={shortDesc} onChange={e => setShortDesc(e.target.value)} />
+          <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-400">{shortDescCount}/120</div>
         </div>
         <div>
           <label className="text-sm">Prompt</label>
-          <textarea className="w-full border dark:border-gray-800 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100" rows={6} placeholder="Instruções e contexto" value={prompt} onChange={e => setPrompt(e.target.value)} />
+          <textarea className="w-full border dark:border-gray-800 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100" rows={8} placeholder="Instruções e contexto" value={prompt} onChange={e => setPrompt(e.target.value)} />
+          <div className="mt-1 text-[11px] text-gray-600 dark:text-gray-400">~{promptWordCount} palavras</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[
+              'Você é um assistente profissional e direto.',
+              'Você é um consultor especialista. Sempre peça contexto antes de responder.',
+              'Responda em português do Brasil, de forma clara e resumida.',
+              'Use passos numerados e exemplos práticos quando necessário.'
+            ].map((s, i) => (
+              <button key={i} type="button" onClick={() => setPrompt(p => (p ? p + '\n\n' + s : s))} className="px-2 py-1 text-xs rounded-md border bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50">
+                + {s.slice(0, 34)}...
+              </button>
+            ))}
+          </div>
         </div>
         <div>
           <label className="text-sm">Modelo</label>
@@ -164,7 +192,30 @@ export default function CreateAI() {
             </label>
           </div>
         </div>
-        <button disabled={loading} onClick={onCreate} className="px-4 py-2 rounded-md bg-brand-600 text-white disabled:opacity-50">{loading ? 'Criando...' : 'Criar'}</button>
+        <button disabled={!canCreate} onClick={onCreate} className="px-4 py-2 rounded-md bg-brand-600 text-white disabled:opacity-50">{loading ? 'Criando...' : 'Criar'}</button>
+        </div>
+        <aside className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-6 space-y-4">
+          <div className="text-sm font-medium">Prévia (Marketplace)</div>
+          <div className="relative flex-shrink-0 w-full h-36 rounded-xl overflow-hidden">
+            {imagePreview ? (
+              <img src={imagePreview} alt="Prévia" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute bottom-2 left-2 right-2">
+              <div className="text-sm font-semibold text-white truncate">{name || 'Nome da AI'}</div>
+              <div className="text-[11px] text-white/80 truncate">{shortDesc || 'Descrição curta'}</div>
+            </div>
+          </div>
+          <div className="text-sm font-medium">Boas práticas</div>
+          <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-2">
+            <li>Use um nome claro e específico (ex.: “Analista Financeiro”).</li>
+            <li>Na descrição, diga o que a AI faz e para quem.</li>
+            <li>No prompt, defina papel, tom e passos de resposta.</li>
+            <li>Se pública, adicione imagem para destacar no catálogo.</li>
+          </ul>
+        </aside>
       </div>
     </div>
   )
