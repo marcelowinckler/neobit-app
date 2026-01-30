@@ -21,7 +21,7 @@ export function ChatProvider({ children }) {
     return raw ? JSON.parse(raw) : []
   })
   const [currentConversationId, setCurrentConversationId] = useState(null)
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
   const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'pt-BR')
   const [preferredName, setPreferredName] = useState(() => localStorage.getItem('preferredName') || '')
   const [aiPersona, setAIPersona] = useState(() => localStorage.getItem('aiPersona') || '')

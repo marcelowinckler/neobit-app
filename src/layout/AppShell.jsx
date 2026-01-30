@@ -25,7 +25,7 @@ export default function AppShell() {
   const [showSidebar, setShowSidebar] = useState(false)
 
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-brand-50 via-white to-brand-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
+    <div className="h-screen w-full bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
       <header className="h-14 border-b bg-white/80 dark:bg-gray-900/60 backdrop-blur flex items-center justify-between px-4 shrink-0 z-40 sticky top-0">
         <div className="flex items-center gap-2">
           <button 
