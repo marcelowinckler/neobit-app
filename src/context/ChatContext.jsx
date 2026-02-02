@@ -8,7 +8,8 @@ function uid() {
 
 const DEFAULT_MODEL = 'gpt-4o-mini'
 const MODELS = [
-  { id: 'gpt-4o-mini', name: 'ChatGPT 4o mini' }
+  { id: 'gpt-4o-mini', name: 'ChatGPT 4o mini' },
+  { id: 'grok', name: 'Grok (via Groq)' }
 ]
 
 export function ChatProvider({ children }) {
@@ -317,7 +318,7 @@ export function ChatProvider({ children }) {
         const payload = {
           messages: [...(convo?.messages || []), { role: 'user', content: text }],
           aiId: convo?.aiId || null,
-          model: 'gpt-4o-mini',
+          model: convo?.model || currentModel || 'gpt-4o-mini',
           preferred_name: preferredName || null,
           persona: aiPersona || null
         }

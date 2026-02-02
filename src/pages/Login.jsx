@@ -63,7 +63,7 @@ export default function Login() {
               <div className="h-10 w-10 rounded-xl bg-white/20 grid place-items-center">
                 <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-white"><path d="M12 3l8 4-8 4-8-4 8-4zM4 10l8 4 8-4v7l-8 4-8-4v-7z" stroke="currentColor" strokeWidth="1.5"/></svg>
               </div>
-              <div className="text-xl font-semibold">NeoBit AI Hub</div>
+              <div className="text-xl font-semibold">MatrixBit AI Hub</div>
             </div>
             <div className="text-sm text-white/80">Converse com modelos de IA e organize seus chats em um só lugar.</div>
             <ul className="text-sm space-y-2">
@@ -78,11 +78,11 @@ export default function Login() {
             <div className="h-9 w-9 rounded-xl bg-brand-600 text-white grid place-items-center">
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M12 3l8 4-8 4-8-4 8-4zM4 10l8 4 8-4v7l-8 4-8-4v-7z" stroke="currentColor" strokeWidth="1.5"/></svg>
             </div>
-            <div className="text-sm font-semibold">NeoBit AI Hub</div>
+            <div className="text-sm font-semibold">MatrixBit AI Hub</div>
           </div>
           <div className="text-center space-y-1">
             <div className="text-2xl font-semibold">Bem-vindo de volta</div>
-            <div className="text-sm text-gray-600">Entre para acessar o NeoBit</div>
+            <div className="text-sm text-gray-600">Entre para acessar o MatrixBit</div>
           </div>
           {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</div>}
           <form className="space-y-4" onSubmit={onSubmit}>

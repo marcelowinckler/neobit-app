@@ -9,7 +9,7 @@ export default function Landing() {
             <div className="h-9 w-9 rounded-xl bg-brand-600 text-white grid place-items-center">
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M12 3l8 4-8 4-8-4 8-4zM4 10l8 4 8-4v7l-8 4-8-4v-7z" stroke="currentColor" strokeWidth="1.5"/></svg>
             </div>
-            <div className="font-semibold">NeoBit</div>
+            <div className="font-semibold">MatrixBit</div>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login" className="text-sm px-3 py-1 rounded-md border bg-white hover:bg-gray-50">Entrar</Link>

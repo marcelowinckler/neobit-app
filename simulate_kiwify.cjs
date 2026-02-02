@@ -5,7 +5,7 @@ const payload = {
   event: 'compra_aprovada',
   email: 'test500@example.com',
   product: {
-    name: 'NeoBit Semestral' 
+    name: 'MatrixBit Semestral' 
   },
   amount: 499.00,
   token: 'thwibpsn4lk'
