@@ -2,7 +2,7 @@ import { useChat } from '../context/ChatContext'
 import { useState, useEffect } from 'react'
 
 export default function Admin() {
-  const { user, t } = useChat()
+  const { user, t, authReady } = useChat()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState(null)
@@ -12,8 +12,14 @@ export default function Admin() {
 
   // Buscar usuários do sistema
   useEffect(() => {
+    if (!authReady) return
+    if (!user || !user.is_admin) {
+      setError('Acesso negado. Apenas administradores.')
+      setLoading(false)
+      return
+    }
     fetchUsers()
-  }, [])
+  }, [authReady, user])
 
   async function fetchUsers() {
     try {
@@ -127,10 +133,28 @@ export default function Admin() {
     return new Date(user.subscription_end) > new Date() ? 'Pay' : 'Free'
   }
 
+  if (!authReady) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Carregando...</div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-500">Carregando usuários...</div>
+      </div>
+    )
+  }
+
+  if (!user || !user.is_admin) {
+    return (
+      <div className="p-4">
+        <div className="p-3 rounded-md bg-red-50 text-red-700 border border-red-200 text-sm">
+          Acesso negado. Apenas administradores.
+        </div>
       </div>
     )
   }
