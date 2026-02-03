@@ -1504,7 +1504,13 @@ app.get('/api/admin/users', async (req, res) => {
       })
     })
 
-    res.json({ users })
+    try {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.send(JSON.stringify({ users: Array.isArray(users) ? users : [] }))
+    } catch (e) {
+      console.error('Erro ao serializar usuários:', e)
+      res.status(500).json({ error: 'Erro interno' })
+    }
   } catch (e) {
     console.error('Erro ao buscar usuários:', e)
     res.status(500).json({ error: 'Erro interno' })
@@ -1636,7 +1642,8 @@ app.post('/api/admin/users/:id/plan', async (req, res) => {
 
     // Atualizar plano do usuário
     await new Promise((resolve, reject) => {
-      db.run('UPDATE users SET plan = ?, subscription_end = ? WHERE id = ?', [plan, subscriptionEnd, targetUserId], (err) => {
+      const endTs = subscriptionEnd ? Number(subscriptionEnd.getTime()) : null
+      db.run('UPDATE users SET plan = ?, subscription_end = ? WHERE id = ?', [plan, endTs, targetUserId], (err) => {
         if (err) return reject(err)
         resolve()
       })
