@@ -29,9 +29,19 @@ export default function Admin() {
       })
       
       if (response.ok) {
-        const data = await response.json()
-        setUsers(data.users || [])
-        setError('')
+        let data = null
+        try {
+          data = await response.json()
+        } catch {
+          data = null
+        }
+        if (data && Array.isArray(data.users)) {
+          setUsers(data.users || [])
+          setError('')
+        } else {
+          setUsers([])
+          setError('Resposta inválida do servidor')
+        }
       } else {
         let msg = 'Falha ao buscar usuários'
         const status = response.status
