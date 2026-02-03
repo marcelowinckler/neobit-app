@@ -227,15 +227,25 @@ function toPg(sql, params) {
 const db = {
   get(sql, params, cb) {
     const { sql: q, params: p } = toPg(sql, params || [])
-    pgPool.query(q, p)
-      .then(r => cb(null, r.rows[0] || null))
-      .catch(err => cb(err))
+    ;(async () => {
+      try {
+        const r = await pgPool.query(q, p)
+        cb && cb(null, r.rows[0] || null)
+      } catch (err) {
+        cb && cb(err)
+      }
+    })()
   },
   all(sql, params, cb) {
     const { sql: q, params: p } = toPg(sql, params || [])
-    pgPool.query(q, p)
-      .then(r => cb(null, r.rows || []))
-      .catch(err => cb(err))
+    ;(async () => {
+      try {
+        const r = await pgPool.query(q, p)
+        cb && cb(null, r.rows || [])
+      } catch (err) {
+        cb && cb(err)
+      }
+    })()
   },
   run(sql, params, cb) {
     let q = sql
@@ -245,17 +255,18 @@ const db = {
       q = `${sql} RETURNING id`
     }
     const { sql: mapped, params: p } = toPg(q, params || [])
-    pgPool.query(mapped, p)
-      .then(r => {
+    ;(async () => {
+      try {
+        const r = await pgPool.query(mapped, p)
         const ctx = {}
         if (r.rows && r.rows[0] && typeof r.rows[0].id !== 'undefined') {
           ctx.lastID = r.rows[0].id
         }
-        if (typeof cb === 'function') cb.call(ctx, null)
-      })
-      .catch(err => {
-        if (typeof cb === 'function') cb(err)
-      })
+        typeof cb === 'function' && cb.call(ctx, null)
+      } catch (err) {
+        typeof cb === 'function' && cb(err)
+      }
+    })()
   }
 }
 
