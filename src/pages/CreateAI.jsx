@@ -18,12 +18,11 @@ export default function CreateAI() {
   const nameCount = name.length
   const shortDescCount = shortDesc.length
   const promptWordCount = (prompt.trim().match(/\S+/g) || []).length
-  const canCreate = !loading && name.trim().length >= 3 && shortDesc.trim().length >= 10 && prompt.trim().length >= 10
 
   async function onCreate() {
     setError('')
-    if (!name.trim()) {
-      setError('Nome é obrigatório')
+    if (name.trim().length < 3) {
+      setError('Nome precisa ter pelo menos 3 caracteres')
       return
     }
     if (shortDesc.trim().length < 10) {
@@ -192,7 +191,7 @@ export default function CreateAI() {
             </label>
           </div>
         </div>
-        <button disabled={!canCreate} onClick={onCreate} className="px-4 py-2 rounded-md bg-brand-600 text-white disabled:opacity-50">{loading ? 'Criando...' : 'Criar'}</button>
+        <button disabled={loading} onClick={onCreate} className="px-4 py-2 rounded-md bg-brand-600 text-white disabled:opacity-50">{loading ? 'Criando...' : 'Criar'}</button>
         </div>
         <aside className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-2xl p-6 space-y-4">
           <div className="text-sm font-medium">Prévia (Marketplace)</div>
