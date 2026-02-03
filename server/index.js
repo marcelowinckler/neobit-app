@@ -288,14 +288,14 @@ function findUserById(id) {
   })
 }
 
-function createUser({ email, name, password, is_admin = 0 }) {
+function createUser({ email, name, password, is_admin = false }) {
   return new Promise((resolve, reject) => {
     try {
       const hash = bcrypt.hashSync(password, 10)
       const now = Date.now()
       db.run(
         'INSERT INTO users (email, name, password_hash, created_at, is_admin) VALUES (?, ?, ?, ?, ?)',
-        [email, name || null, hash, now, is_admin],
+        [email, name || null, hash, now, !!is_admin],
         function (err) {
           if (err) return reject(err)
           resolve({ id: this.lastID, email, name: name || null, created_at: now, is_admin })
@@ -349,8 +349,8 @@ app.post('/api/auth/signup', async (req, res) => {
     }
     
     console.log('[Signup] Creating user...')
-    let is_admin = (await countUsers()) === 0 ? 1 : 0;
-    if (email === 'matrixbit@gmail.com') is_admin = 1;
+    let is_admin = (await countUsers()) === 0
+    if (email === 'matrixbit@gmail.com') is_admin = true
     const user = await createUser({ email, name, password, is_admin });
     console.log('[Signup] User created:', user.id)
 
@@ -389,12 +389,12 @@ app.post('/api/auth/login', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Credenciais inválidas' })
     if (email === 'matrixbit@gmail.com' && !user.is_admin) {
       await new Promise((resolve, reject) => {
-        db.run('UPDATE users SET is_admin = 1 WHERE id = ?', [user.id], (err) => {
+        db.run('UPDATE users SET is_admin = TRUE WHERE id = ?', [user.id], (err) => {
           if (err) return reject(err)
           resolve()
         })
       })
-      user.is_admin = 1
+      user.is_admin = true
     }
     if (typeof user.password_hash !== 'string' || !user.password_hash) return res.status(401).json({ error: 'Credenciais inválidas' })
     let ok = false
@@ -483,18 +483,18 @@ app.post('/api/auth/google', async (req, res) => {
       if (existingIp && email !== 'sss@sss' && email !== 'matrixbit@gmail.com') {
         return res.status(429).json({ error: 'Limite atingido: já existe uma conta neste IP' })
       }
-      const is_admin = email === 'matrixbit@gmail.com' ? 1 : 0
+      const is_admin = email === 'matrixbit@gmail.com'
       user = await createUser({ email, name, password: Math.random().toString(36).slice(2), is_admin })
       db.run('UPDATE users SET signup_ip = ?, last_login_ip = ? WHERE id = ?', [ip, ip, user.id])
     }
     if (email === 'matrixbit@gmail.com' && !user.is_admin) {
       await new Promise((resolve, reject) => {
-        db.run('UPDATE users SET is_admin = 1 WHERE id = ?', [user.id], (err) => {
+        db.run('UPDATE users SET is_admin = TRUE WHERE id = ?', [user.id], (err) => {
           if (err) return reject(err)
           resolve()
         })
       })
-      user.is_admin = 1
+      user.is_admin = true
     }
     req.session.userId = user.id
     if (email === 'sss@sss') {
@@ -525,10 +525,10 @@ function createAI({ owner_user_id, name, short_desc, prompt, model, image_data, 
     const image_url = normalizeImageUrl(image_data)
     db.run(
       'INSERT INTO ais (owner_user_id, name, short_desc, prompt, model, image_url, is_public, created_at, extra_context) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [owner_user_id, name, short_desc || null, prompt || null, model || null, image_url || null, is_public ? 1 : 0, now, extra_context || null],
+      [owner_user_id, name, short_desc || null, prompt || null, model || null, image_url || null, !!is_public, now, extra_context || null],
       function (err) {
         if (err) reject(err)
-        else resolve({ id: this.lastID, owner_user_id, name, short_desc: short_desc || null, prompt: prompt || null, model: model || null, image_url: image_url || null, is_public: is_public ? 1 : 0, extra_context: extra_context || null })
+        else resolve({ id: this.lastID, owner_user_id, name, short_desc: short_desc || null, prompt: prompt || null, model: model || null, image_url: image_url || null, is_public: !!is_public, extra_context: extra_context || null })
       }
     )
   })
@@ -599,7 +599,7 @@ function listMyAIs(userId) {
 
 function listPublicAIs() {
   return new Promise((resolve, reject) => {
-    db.all('SELECT id, owner_user_id, name, short_desc, prompt, model, image_url, is_public, created_at, extra_context FROM ais WHERE is_public = 1 ORDER BY created_at DESC', [], (err, rows) => {
+    db.all('SELECT id, owner_user_id, name, short_desc, prompt, model, image_url, is_public, created_at, extra_context FROM ais WHERE is_public = TRUE ORDER BY created_at DESC', [], (err, rows) => {
       if (err) reject(err)
       else {
         console.log(`[DEBUG] Sistema: ${SYSTEM_AIS.length} AIs fixas, DB: ${rows ? rows.length : 0} AIs públicas`)
@@ -664,7 +664,7 @@ function updateAI({ id, owner_user_id, name, short_desc, prompt, model, image_da
     const image_url = image_data ? normalizeImageUrl(image_data) : null
     db.run(
       'UPDATE ais SET name = ?, short_desc = ?, prompt = ?, model = ?, image_url = COALESCE(?, image_url), is_public = ?, extra_context = COALESCE(?, extra_context) WHERE id = ? AND owner_user_id = ?',
-      [name, short_desc || null, prompt || null, model || null, image_url, is_public ? 1 : 0, extra_context || null, id, owner_user_id],
+      [name, short_desc || null, prompt || null, model || null, image_url, is_public ? true : false, extra_context || null, id, owner_user_id],
       function (err) {
         if (err) reject(err)
         else resolve(true)
