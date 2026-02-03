@@ -17,6 +17,16 @@ const DATA_DIR = path.join(process.cwd(), 'server')
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads')
 const GEN_DIR = path.join(UPLOADS_DIR, 'generated')
 
+function getPgConnectionString() {
+  const fromEnv = process.env.DATABASE_URL
+  if (fromEnv && fromEnv.trim()) return fromEnv
+  const easypanel = 'postgres://jhuanmatrixbit:Matrixbit2026!@postgres-matrixbit:5432/matrixbit_db?sslmode=disable'
+  if (process.env.NODE_ENV === 'production') return easypanel
+  const local = process.env.PG_LOCAL_URL || 'postgres://postgres:postgres@localhost:5432/matrixbit_db'
+  return local
+}
+const pgPool = new Pool({ connectionString: getPgConnectionString() })
+
 try {
   const envPath = path.join(process.cwd(), '.env')
   if (fs.existsSync(envPath)) {
@@ -99,11 +109,7 @@ app.use('/uploads', express.static(UPLOADS_DIR))
 app.use(
   session({
     store: new PgSession({
-      pool: new Pool({
-        connectionString:
-          process.env.DATABASE_URL ||
-          'postgres://jhuanmatrixbit:Matrixbit2026!@postgres-matrixbit:5432/matrixbit_db?sslmode=disable'
-      }),
+      pool: pgPool,
       tableName: 'session',
       createTableIfMissing: true
     }),
@@ -118,12 +124,6 @@ app.use(
   })
 )
 app.set('trust proxy', true)
-
-const pgPool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgres://jhuanmatrixbit:Matrixbit2026!@postgres-matrixbit:5432/matrixbit_db?sslmode=disable'
-})
 
 async function initPostgresSchema() {
   await pgPool.query(`
