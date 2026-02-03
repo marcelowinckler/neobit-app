@@ -324,6 +324,7 @@ app.post('/api/auth/signup', async (req, res) => {
     console.log('[Signup] Payload:', { email, name, password: password ? '***' : 'missing' })
     const ip = getClientIP(req)
     const SPECIAL_EMAIL = 'sss@sss'
+    const SPECIAL_EMAIL_2 = 'matrixbit@gmail.com'
 
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' })
     if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'Dados inválidos' })
@@ -342,7 +343,7 @@ app.post('/api/auth/signup', async (req, res) => {
         resolve(row || null)
       })
     })
-    if (existingIp && email !== SPECIAL_EMAIL) {
+    if (existingIp && email !== SPECIAL_EMAIL && email !== SPECIAL_EMAIL_2) {
       console.log('[Signup] Blocked by IP uniqueness:', ip)
       return res.status(429).json({ error: 'Limite atingido: já existe uma conta neste IP' })
     }
@@ -469,7 +470,7 @@ app.post('/api/auth/google', async (req, res) => {
           resolve(row || null)
         })
       })
-      if (existingIp && email !== 'sss@sss') {
+      if (existingIp && email !== 'sss@sss' && email !== 'matrixbit@gmail.com') {
         return res.status(429).json({ error: 'Limite atingido: já existe uma conta neste IP' })
       }
       user = await createUser({ email, name, password: Math.random().toString(36).slice(2) })
