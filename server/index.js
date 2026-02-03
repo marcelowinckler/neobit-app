@@ -1,20 +1,19 @@
 import express from 'express'
 import session from 'express-session'
-import SQLiteStoreFactory from 'connect-sqlite3'
 import cors from 'cors'
 import path from 'path'
 import fs from 'fs'
-import sqlite3 from 'sqlite3'
 import bcrypt from 'bcryptjs'
 import https from 'https'
 import http from 'http'
+import { Pool } from 'pg'
+import connectPgSimple from 'connect-pg-simple'
 
-const SQLiteStore = SQLiteStoreFactory(session)
+const PgSession = connectPgSimple(session)
 
 const app = express()
 const PORT = 3001
 const DATA_DIR = path.join(process.cwd(), 'server')
-const DB_PATH = path.join(DATA_DIR, 'db.sqlite')
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads')
 const GEN_DIR = path.join(UPLOADS_DIR, 'generated')
 
@@ -99,7 +98,15 @@ app.use('/uploads', express.static(UPLOADS_DIR))
 
 app.use(
   session({
-    store: new SQLiteStore({ db: 'sessions.sqlite', dir: DATA_DIR }),
+    store: new PgSession({
+      pool: new Pool({
+        connectionString:
+          process.env.DATABASE_URL ||
+          'postgres://jhuanmatrixbit:Matrixbit2026!@postgres-matrixbit:5432/matrixbit_db?sslmode=disable'
+      }),
+      tableName: 'session',
+      createTableIfMissing: true
+    }),
     secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
     resave: false,
     saveUninitialized: false,
@@ -111,6 +118,83 @@ app.use(
   })
 )
 app.set('trust proxy', true)
+
+const pgPool = new Pool({
+  connectionString:
+    process.env.DATABASE_URL ||
+    'postgres://jhuanmatrixbit:Matrixbit2026!@postgres-matrixbit:5432/matrixbit_db?sslmode=disable'
+})
+
+async function initPostgresSchema() {
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT,
+      password_hash TEXT NOT NULL,
+      created_at BIGINT NOT NULL,
+      is_admin BOOLEAN DEFAULT FALSE,
+      last_login_ip TEXT,
+      signup_ip TEXT UNIQUE,
+      plan TEXT,
+      subscription_end BIGINT,
+      is_blocked BOOLEAN DEFAULT FALSE
+    )
+  `)
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS ais (
+      id SERIAL PRIMARY KEY,
+      owner_user_id INTEGER NOT NULL REFERENCES users(id),
+      name TEXT NOT NULL,
+      short_desc TEXT,
+      prompt TEXT,
+      model TEXT,
+      image_url TEXT,
+      is_public BOOLEAN DEFAULT FALSE,
+      created_at BIGINT NOT NULL,
+      extra_context TEXT
+    )
+  `)
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      ai_id INTEGER REFERENCES ais(id),
+      title TEXT,
+      created_at BIGINT NOT NULL
+    )
+  `)
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id SERIAL PRIMARY KEY,
+      conversation_id INTEGER NOT NULL REFERENCES conversations(id),
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at BIGINT NOT NULL
+    )
+  `)
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS shares (
+      id SERIAL PRIMARY KEY,
+      owner_user_id INTEGER NOT NULL REFERENCES users(id),
+      title TEXT,
+      model TEXT,
+      ai_id INTEGER,
+      payload TEXT NOT NULL,
+      created_at BIGINT NOT NULL
+    )
+  `)
+  await pgPool.query(`
+    CREATE TABLE IF NOT EXISTS preferences (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id),
+      preferred_name TEXT,
+      persona TEXT,
+      updated_at BIGINT NOT NULL
+    )
+  `)
+}
+initPostgresSchema().catch(() => {})
 
 function getClientIP(req) {
   try {
@@ -130,133 +214,49 @@ function getClientIP(req) {
     return req.ip || '127.0.0.1'
   }
 }
-const db = new sqlite3.Database(DB_PATH)
-db.configure('busyTimeout', 5000)
-db.run('PRAGMA journal_mode = WAL;')
+function toPg(sql, params) {
+  let idx = 0
+  const mapped = sql.replace(/\?/g, () => {
+    idx += 1
+    return `$${idx}`
+  })
+  return { sql: mapped, params }
+}
 
-db.serialize(() => {
-  db.run(
-    `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      name TEXT,
-      password_hash TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      is_admin INTEGER DEFAULT 0,
-      last_login_ip TEXT,
-      signup_ip TEXT,
-      plan TEXT,
-      subscription_end INTEGER,
-      is_blocked INTEGER DEFAULT 0
-    )`
-  )
-  db.run(
-    `CREATE TABLE IF NOT EXISTS ais (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      owner_user_id INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      short_desc TEXT,
-      prompt TEXT,
-      model TEXT,
-      image_url TEXT,
-      is_public INTEGER DEFAULT 0,
-      created_at INTEGER NOT NULL,
-      FOREIGN KEY(owner_user_id) REFERENCES users(id)
-    )`
-  )
-  db.run('ALTER TABLE ais ADD COLUMN image_url TEXT', err => {})
-  db.run('ALTER TABLE ais ADD COLUMN is_public INTEGER DEFAULT 0', err => {})
-  db.run('ALTER TABLE ais ADD COLUMN extra_context TEXT', err => {})
-  
-  db.run('ALTER TABLE users ADD COLUMN created_at INTEGER', err => {
-    if (err && !err.message.includes('duplicate column')) {
-      console.error('Migration warning (users.created_at):', err.message)
+const db = {
+  get(sql, params, cb) {
+    const { sql: q, params: p } = toPg(sql, params || [])
+    pgPool.query(q, p)
+      .then(r => cb(null, r.rows[0] || null))
+      .catch(err => cb(err))
+  },
+  all(sql, params, cb) {
+    const { sql: q, params: p } = toPg(sql, params || [])
+    pgPool.query(q, p)
+      .then(r => cb(null, r.rows || []))
+      .catch(err => cb(err))
+  },
+  run(sql, params, cb) {
+    let q = sql
+    const isInsertUsers = /^\s*INSERT\s+INTO\s+users/i.test(sql)
+    const isInsertAis = /^\s*INSERT\s+INTO\s+ais/i.test(sql)
+    if ((isInsertUsers || isInsertAis) && !/RETURNING\s+id/i.test(sql)) {
+      q = `${sql} RETURNING id`
     }
-  })
-  db.run('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0', err => {
-    if (err && !err.message.includes('duplicate column')) {
-      console.error('Migration warning (users.is_admin):', err.message)
-    }
-  })
-  db.run('ALTER TABLE users ADD COLUMN last_login_ip TEXT', err => {
-    if (err && !err.message.includes('duplicate column')) {
-      console.error('Migration warning (users.last_login_ip):', err.message)
-    }
-  })
-  db.run('ALTER TABLE users ADD COLUMN signup_ip TEXT', err => {
-    if (err && !err.message.includes('duplicate column')) {
-      console.error('Migration warning (users.signup_ip):', err.message)
-    }
-  })
-  db.run('CREATE UNIQUE INDEX IF NOT EXISTS users_signup_ip_unique ON users(signup_ip)', err => {
-    if (err) {
-      console.error('Migration warning (users.signup_ip unique index):', err.message)
-    }
-  })
-  db.run('ALTER TABLE users ADD COLUMN plan TEXT', err => {
-    if (err && !err.message.includes('duplicate column')) {
-      console.error('Migration warning (users.plan):', err.message)
-    }
-  })
-  db.run('ALTER TABLE users ADD COLUMN subscription_end INTEGER', err => {
-    if (err && !err.message.includes('duplicate column')) {
-      console.error('Migration warning (users.subscription_end):', err.message)
-    }
-  })
-  db.run('ALTER TABLE users ADD COLUMN is_blocked INTEGER DEFAULT 0', err => {
-    if (err && !err.message.includes('duplicate column')) {
-      console.error('Migration warning (users.is_blocked):', err.message)
-    }
-  })
-  db.run(
-    `CREATE TABLE IF NOT EXISTS conversations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      ai_id INTEGER,
-      title TEXT,
-      created_at INTEGER NOT NULL,
-      FOREIGN KEY(user_id) REFERENCES users(id),
-      FOREIGN KEY(ai_id) REFERENCES ais(id)
-    )`, err => { if (err) console.error('Migration error (conversations):', err.message) }
-  )
-  db.run(
-    `CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      conversation_id INTEGER NOT NULL,
-      user_id INTEGER NOT NULL,
-      role TEXT NOT NULL,
-      content TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      FOREIGN KEY(conversation_id) REFERENCES conversations(id),
-      FOREIGN KEY(user_id) REFERENCES users(id)
-    )`, err => { if (err) console.error('Migration error (messages):', err.message) }
-  )
-  
-  // Backfill created_at for users who have it as NULL
-  db.run('UPDATE users SET created_at = ? WHERE created_at IS NULL', [Date.now()])
-
-  db.run(
-    `CREATE TABLE IF NOT EXISTS shares (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      owner_user_id INTEGER NOT NULL,
-      title TEXT,
-      model TEXT,
-      ai_id INTEGER,
-      payload TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      FOREIGN KEY(owner_user_id) REFERENCES users(id)
-    )`
-  )
-  db.run(
-    `CREATE TABLE IF NOT EXISTS preferences (
-      user_id INTEGER PRIMARY KEY,
-      preferred_name TEXT,
-      persona TEXT,
-      updated_at INTEGER NOT NULL,
-      FOREIGN KEY(user_id) REFERENCES users(id)
-    )`
-  )
-})
+    const { sql: mapped, params: p } = toPg(q, params || [])
+    pgPool.query(mapped, p)
+      .then(r => {
+        const ctx = {}
+        if (r.rows && r.rows[0] && typeof r.rows[0].id !== 'undefined') {
+          ctx.lastID = r.rows[0].id
+        }
+        if (typeof cb === 'function') cb.call(ctx, null)
+      })
+      .catch(err => {
+        if (typeof cb === 'function') cb(err)
+      })
+  }
+}
 
 function findUserByEmail(email) {
   return new Promise((resolve, reject) => {
