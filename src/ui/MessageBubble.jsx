@@ -43,7 +43,7 @@ export default function MessageBubble({ role, content }) {
     } catch {}
   }
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} flex-col`}>
+    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
       {typeof content === 'string' && ((content.startsWith('data:image') || content.startsWith('http') || content.startsWith('/uploads/'))) && !isUser ? (
         <div className="relative max-w-md">
           <img src={content} alt="image" className="w-full max-w-md max-h-64 rounded-xl object-cover border dark:border-gray-800" />
