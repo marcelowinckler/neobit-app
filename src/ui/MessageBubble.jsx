@@ -1,5 +1,8 @@
+import { useState } from 'react'
+
 export default function MessageBubble({ role, content }) {
   const isUser = role === 'user'
+  const [copied, setCopied] = useState(false)
   async function handleDownload(src) {
     try {
       const url = src
@@ -53,11 +56,18 @@ export default function MessageBubble({ role, content }) {
           {!isUser && (
             <button
               onClick={async () => {
-                try { await navigator.clipboard.writeText(typeof content === 'string' ? content : '') } catch {}
+                try {
+                  await navigator.clipboard.writeText(typeof content === 'string' ? content : '')
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1500)
+                } catch {}
               }}
-              className="mt-1 px-2 py-1 text-xs rounded-md border bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50"
+              disabled={copied}
+              className={`mt-1 px-2 py-1 text-xs rounded-md border ${
+                copied ? 'bg-green-600 text-white' : 'bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50'
+              }`}
             >
-              Copiar
+              {copied ? 'Copiado!' : 'Copiar'}
             </button>
           )}
         </div>
