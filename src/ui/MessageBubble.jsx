@@ -1,8 +1,5 @@
-import { useState } from 'react'
-
 export default function MessageBubble({ role, content }) {
   const isUser = role === 'user'
-  const [copied, setCopied] = useState(false)
   async function handleDownload(src) {
     try {
       const url = src
@@ -35,15 +32,8 @@ export default function MessageBubble({ role, content }) {
       URL.revokeObjectURL(a.href)
     } catch {}
   }
-  async function handleCopy(text) {
-    try {
-      await navigator.clipboard.writeText(text || '')
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch {}
-  }
   return (
-    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       {typeof content === 'string' && ((content.startsWith('data:image') || content.startsWith('http') || content.startsWith('/uploads/'))) && !isUser ? (
         <div className="relative max-w-md">
           <img src={content} alt="image" className="w-full max-w-md max-h-64 rounded-xl object-cover border dark:border-gray-800" />
@@ -52,7 +42,7 @@ export default function MessageBubble({ role, content }) {
           </button>
         </div>
       ) : (
-        <>
+        <div>
           <div
             className={`max-w-xl rounded-2xl px-4 py-2 text-sm whitespace-pre-wrap ${
               isUser ? 'bg-brand-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
@@ -60,17 +50,17 @@ export default function MessageBubble({ role, content }) {
           >
             {content}
           </div>
-          {!isUser && typeof content === 'string' && !content.startsWith('data:image') && (
-            <div className="mt-1">
-              <button
-                onClick={() => handleCopy(content)}
-                className="px-2 py-1 text-xs rounded-md border bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50"
-              >
-                {copied ? 'Copiado!' : 'Copiar'}
-              </button>
-            </div>
+          {!isUser && (
+            <button
+              onClick={async () => {
+                try { await navigator.clipboard.writeText(typeof content === 'string' ? content : '') } catch {}
+              }}
+              className="mt-1 px-2 py-1 text-xs rounded-md border bg-white dark:bg-gray-800 dark:text-gray-100 hover:bg-gray-50"
+            >
+              Copiar
+            </button>
           )}
-        </>
+        </div>
       )}
     </div>
   )
