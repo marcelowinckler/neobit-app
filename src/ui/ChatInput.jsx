@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useChat } from '../context/ChatContext'
 
 export default function ChatInput({ disabled }) {
   const [value, setValue] = useState('')
+  const [recording, setRecording] = useState(false)
+  const [recError, setRecError] = useState('')
+  const mediaRecorderRef = useRef(null)
+  const chunksRef = useRef([])
   const { sendMessage, currentModel, setModel, models, currentConversation, t } = useChat()
   const COMMANDS = [
     { key: '/img', title: 'img', desc: 'Gerar imagem' },
@@ -19,6 +23,73 @@ export default function ChatInput({ disabled }) {
     if (!value.trim()) return
     sendMessage(value)
     setValue('')
+  }
+  
+  async function startRecording() {
+    setRecError('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const type = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
+      const mr = new MediaRecorder(stream, { mimeType: type })
+      chunksRef.current = []
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data)
+      }
+      mr.onstop = async () => {
+        try {
+          const blob = new Blob(chunksRef.current, { type })
+          const reader = new FileReader()
+          reader.onloadend = async () => {
+            try {
+              const dataUrl = typeof reader.result === 'string' ? reader.result : ''
+              const res = await fetch('/api/audio/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ data_url: dataUrl })
+              })
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}))
+                throw new Error(err.error || 'Falha na transcrição')
+              }
+              const json = await res.json()
+              const text = (json && json.text) || ''
+              if (text.trim()) {
+                sendMessage(text.trim())
+              } else {
+                setRecError('Transcrição vazia')
+              }
+            } catch (e) {
+              setRecError(e.message || 'Falha na transcrição')
+            }
+          }
+          reader.readAsDataURL(blob)
+        } catch (e) {
+          setRecError(e.message || 'Falha ao processar áudio')
+        } finally {
+          // Stop all tracks
+          try {
+            stream.getAudioTracks().forEach(t => t.stop())
+          } catch {}
+        }
+      }
+      mediaRecorderRef.current = mr
+      mr.start()
+      setRecording(true)
+    } catch (e) {
+      setRecError(e.message || 'Permissão de microfone negada')
+      setRecording(false)
+    }
+  }
+  
+  async function stopRecording() {
+    try {
+      const mr = mediaRecorderRef.current
+      if (mr && mr.state !== 'inactive') {
+        mr.stop()
+      }
+    } catch {}
+    setRecording(false)
   }
 
   return (
@@ -73,6 +144,22 @@ export default function ChatInput({ disabled }) {
               />
             </div>
             <button
+              onClick={recording ? stopRecording : startRecording}
+              disabled={disabled}
+              title={recording ? 'Parar e transcrever' : 'Gravar áudio'}
+              className={`self-center h-10 w-10 rounded-full border dark:border-gray-700 grid place-items-center ${
+                recording ? 'bg-red-600 text-white animate-pulse' : 'bg-white dark:bg-gray-800 text-gray-700'
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="2">
+                {recording ? (
+                  <path d="M7 10a5 5 0 1010 0v0a5 5 0 10-10 0v0zM12 15v4M8 19h8" />
+                ) : (
+                  <path d="M12 3a3 3 0 013 3v6a3 3 0 11-6 0V6a3 3 0 013-3zm0 12v4m-4 0h8" />
+                )}
+              </svg>
+            </button>
+            <button
               onClick={onSend}
               disabled={disabled}
               className="self-center px-4 py-3 rounded-xl bg-brand-600 text-white disabled:opacity-50"
@@ -80,6 +167,9 @@ export default function ChatInput({ disabled }) {
               {t('send')}
             </button>
           </div>
+          {recError && (
+            <div className="mt-2 text-xs text-red-600">{recError}</div>
+          )}
         </div>
       </div>
     </div>

@@ -1203,6 +1203,84 @@ app.post('/api/images/generate', async (req, res) => {
   }
 })
 
+function parseDataURL(input) {
+  try {
+    if (!input || typeof input !== 'string' || !input.startsWith('data:')) return null
+    const parts = input.split(',')
+    const meta = parts[0] || ''
+    const b64 = parts[1] || ''
+    const mimeMatch = meta.match(/data:(.*?);/)
+    const mime = (mimeMatch && mimeMatch[1]) ? mimeMatch[1] : 'audio/webm'
+    const buf = Buffer.from(b64, 'base64')
+    return { mime, buf }
+  } catch {
+    return null
+  }
+}
+
+function callOpenAITranscribe({ buffer, filename, mime }) {
+  return new Promise((resolve, reject) => {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) return reject(new Error('OPENAI_API_KEY não configurada'))
+    const boundary = '----trae-' + Math.random().toString(36).slice(2)
+    const CRLF = '\r\n'
+    const parts = []
+    parts.push(Buffer.from(`--${boundary}${CRLF}`))
+    parts.push(Buffer.from(`Content-Disposition: form-data; name="file"; filename="${filename || 'audio.webm'}"${CRLF}`))
+    parts.push(Buffer.from(`Content-Type: ${mime || 'audio/webm'}${CRLF}${CRLF}`))
+    parts.push(buffer)
+    parts.push(Buffer.from(`${CRLF}`))
+    parts.push(Buffer.from(`--${boundary}${CRLF}`))
+    parts.push(Buffer.from(`Content-Disposition: form-data; name="model"${CRLF}${CRLF}`))
+    parts.push(Buffer.from(`whisper-1${CRLF}`))
+    parts.push(Buffer.from(`--${boundary}--${CRLF}`))
+    const body = Buffer.concat(parts)
+    const req = https.request({
+      hostname: 'api.openai.com',
+      path: '/v1/audio/transcriptions',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': body.length
+      }
+    }, res => {
+      let data = ''
+      res.on('data', chunk => { data += chunk })
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data)
+          if ((res.statusCode || 500) >= 400 || json?.error) {
+            return reject(new Error(json?.error?.message || 'Erro na transcrição'))
+          }
+          const text = json?.text || ''
+          resolve(text)
+        } catch (e) {
+          reject(e)
+        }
+      })
+    })
+    req.on('error', reject)
+    req.write(body)
+    req.end()
+  })
+}
+
+app.post('/api/audio/transcribe', async (req, res) => {
+  try {
+    const userId = req.session.userId
+    if (!userId) return res.status(401).json({ error: 'Não autenticado' })
+    const { data_url } = req.body || {}
+    if (!data_url) return res.status(400).json({ error: 'data_url obrigatório' })
+    const parsed = parseDataURL(data_url)
+    if (!parsed || !parsed.buf) return res.status(400).json({ error: 'Formato de áudio inválido' })
+    const text = await callOpenAITranscribe({ buffer: parsed.buf, filename: 'audio.webm', mime: parsed.mime })
+    res.json({ text })
+  } catch (e) {
+    res.status(500).json({ error: e.message || 'Erro interno' })
+  }
+})
+
 app.post('/api/search/web', async (req, res) => {
   const { query } = req.body || {}
   if (!query) return res.status(400).json({ error: 'Query obrigatória' })
