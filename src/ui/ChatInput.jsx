@@ -55,7 +55,7 @@ export default function ChatInput({ disabled }) {
               const json = await res.json()
               const text = (json && json.text) || ''
               if (text.trim()) {
-                sendMessage(text.trim())
+                setValue(text.trim())
               } else {
                 setRecError('Transcrição vazia')
               }
