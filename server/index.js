@@ -1523,7 +1523,7 @@ app.get('/api/admin/users', async (req, res) => {
           GROUP BY user_id
         ) m ON u.id = m.user_id
         ORDER BY u.created_at DESC
-      `, (err, rows) => {
+      `, [], (err, rows) => {
         if (err) return reject(err)
         resolve(rows)
       })
