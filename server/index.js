@@ -1524,7 +1524,8 @@ app.get('/api/admin/users', async (req, res) => {
 
     try {
       res.setHeader('Content-Type', 'application/json; charset=utf-8')
-      res.send(JSON.stringify({ users: Array.isArray(users) ? users : [] }))
+      const list = Array.isArray(users) ? users : []
+      res.send(JSON.stringify({ users: list, count: list.length }))
     } catch (e) {
       console.error('Erro ao serializar usuários:', e)
       res.status(500).json({ error: 'Erro interno' })
@@ -1535,6 +1536,30 @@ app.get('/api/admin/users', async (req, res) => {
   }
 })
 
+app.get('/api/admin/users/count', async (req, res) => {
+  try {
+    const userId = req.session.userId
+    if (!userId) return res.status(401).json({ error: 'Não autenticado' })
+    const admin = await new Promise((resolve, reject) => {
+      db.get('SELECT is_admin FROM users WHERE id = ?', [userId], (err, row) => {
+        if (err) return reject(err)
+        resolve(row)
+      })
+    })
+    if (!admin || !admin.is_admin) {
+      return res.status(403).json({ error: 'Acesso negado. Apenas administradores.' })
+    }
+    const row = await new Promise((resolve, reject) => {
+      db.get('SELECT COUNT(*) AS count FROM users', [], (err, r) => {
+        if (err) return reject(err)
+        resolve(r || { count: 0 })
+      })
+    })
+    res.json({ count: Number(row.count) || 0 })
+  } catch (e) {
+    res.status(500).json({ error: 'Erro interno' })
+  }
+})
 app.delete('/api/admin/users/:id', async (req, res) => {
   try {
     const userId = req.session.userId
