@@ -44,6 +44,13 @@ function getPgConnectionString() {
   return local || 'postgres://postgres:postgres@localhost:5432/matrixbit_db'
 }
 const pgPool = new Pool({ connectionString: getPgConnectionString() })
+try {
+  const cs = getPgConnectionString()
+  const u = new URL(cs)
+  const host = u.hostname
+  const dbName = u.pathname.replace(/^\//, '')
+  console.log(`[db] conectado em ${host}/${dbName}`)
+} catch {}
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true })
