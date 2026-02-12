@@ -17,17 +17,6 @@ const DATA_DIR = path.join(process.cwd(), 'server')
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads')
 const GEN_DIR = path.join(UPLOADS_DIR, 'generated')
 
-function getPgConnectionString() {
-  const fromEnv = process.env.DATABASE_URL && process.env.DATABASE_URL.trim()
-  if (fromEnv) return fromEnv
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('DATABASE_URL não configurada em produção')
-  }
-  const local = process.env.PG_LOCAL_URL && process.env.PG_LOCAL_URL.trim()
-  return local || 'postgres://postgres:postgres@localhost:5432/matrixbit_db'
-}
-const pgPool = new Pool({ connectionString: getPgConnectionString() })
-
 try {
   const envPath = path.join(process.cwd(), '.env')
   if (fs.existsSync(envPath)) {
@@ -44,6 +33,17 @@ try {
     }
   }
 } catch {}
+
+function getPgConnectionString() {
+  const fromEnv = process.env.DATABASE_URL && process.env.DATABASE_URL.trim()
+  if (fromEnv) return fromEnv
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('DATABASE_URL não configurada em produção')
+  }
+  const local = process.env.PG_LOCAL_URL && process.env.PG_LOCAL_URL.trim()
+  return local || 'postgres://postgres:postgres@localhost:5432/matrixbit_db'
+}
+const pgPool = new Pool({ connectionString: getPgConnectionString() })
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true })
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true })
