@@ -74,9 +74,15 @@ export default function Admin() {
       if (response.ok) {
         setUsers(users.filter(u => u.id !== selectedUser.id))
         setShowModal(false)
+      } else {
+        const err = await response.json().catch(() => ({}))
+        setError(err.error || 'Falha ao excluir usuário')
+        setShowModal(false)
+        fetchUsers()
       }
     } catch (error) {
       console.error('Erro ao excluir usuário:', error)
+      setError('Erro ao excluir usuário')
     }
   }
 

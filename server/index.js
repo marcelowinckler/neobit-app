@@ -1589,19 +1589,18 @@ app.delete('/api/admin/users/:id', async (req, res) => {
       return res.status(400).json({ error: 'Não é possível excluir sua própria conta' })
     }
 
-    // Excluir todos os dados do usuário (cascade)
-    await new Promise((resolve, reject) => {
-      db.serialize(() => {
-        db.run('DELETE FROM messages WHERE user_id = ?', [targetUserId])
-        db.run('DELETE FROM conversations WHERE user_id = ?', [targetUserId])
-        db.run('DELETE FROM ais WHERE owner_user_id = ?', [targetUserId])
-        db.run('DELETE FROM preferences WHERE user_id = ?', [targetUserId])
-        db.run('DELETE FROM shares WHERE owner_user_id = ?', [targetUserId])
-        db.run('DELETE FROM users WHERE id = ?', [targetUserId], (err) => {
-          if (err) return reject(err)
-          resolve()
-        })
-      })
+    await new Promise(async (resolve, reject) => {
+      try {
+        await new Promise((r, j) => db.run('DELETE FROM messages WHERE user_id = ?', [targetUserId], err => err ? j(err) : r()))
+        await new Promise((r, j) => db.run('DELETE FROM conversations WHERE user_id = ?', [targetUserId], err => err ? j(err) : r()))
+        await new Promise((r, j) => db.run('DELETE FROM ais WHERE owner_user_id = ?', [targetUserId], err => err ? j(err) : r()))
+        await new Promise((r, j) => db.run('DELETE FROM preferences WHERE user_id = ?', [targetUserId], err => err ? j(err) : r()))
+        await new Promise((r, j) => db.run('DELETE FROM shares WHERE owner_user_id = ?', [targetUserId], err => err ? j(err) : r()))
+        await new Promise((r, j) => db.run('DELETE FROM users WHERE id = ?', [targetUserId], err => err ? j(err) : r()))
+        resolve()
+      } catch (e) {
+        reject(e)
+      }
     })
 
     res.json({ ok: true })
