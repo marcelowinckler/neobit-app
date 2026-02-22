@@ -9,6 +9,16 @@ import http from 'http'
 import { Pool } from 'pg'
 import connectPgSimple from 'connect-pg-simple'
 
+// Logo após os imports, antes de qualquer middleware
+app.get('/health', (req, res) => {
+  console.log('[DEBUG] Health check accessed');
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date(),
+    env: process.env.NODE_ENV 
+  });
+});
+
 const PgSession = connectPgSimple(session)
 
 const app = express()
