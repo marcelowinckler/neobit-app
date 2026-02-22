@@ -9,6 +9,14 @@ import http from 'http'
 import { Pool } from 'pg'
 import connectPgSimple from 'connect-pg-simple'
 
+const PgSession = connectPgSimple(session)
+
+const app = express()
+const PORT = 3001
+const DATA_DIR = path.join(process.cwd(), 'server')
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads')
+const GEN_DIR = path.join(UPLOADS_DIR, 'generated')
+
 // Logo após os imports, antes de qualquer middleware
 app.get('/health', (req, res) => {
   console.log('[DEBUG] Health check accessed');
@@ -18,14 +26,6 @@ app.get('/health', (req, res) => {
     env: process.env.NODE_ENV 
   });
 });
-
-const PgSession = connectPgSimple(session)
-
-const app = express()
-const PORT = 3001
-const DATA_DIR = path.join(process.cwd(), 'server')
-const UPLOADS_DIR = path.join(DATA_DIR, 'uploads')
-const GEN_DIR = path.join(UPLOADS_DIR, 'generated')
 
 try {
   const envPath = path.join(process.cwd(), '.env')
