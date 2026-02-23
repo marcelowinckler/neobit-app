@@ -12,20 +12,19 @@ import connectPgSimple from 'connect-pg-simple'
 const PgSession = connectPgSimple(session)
 
 const app = express()
-const PORT = process.env.PORT || 3001
+// Logo após os imports, antes de qualquer middleware
+app.get('/health', (req, res) => {
+  console.log('[DEBUG] Health check accessed')
+  res.json({
+    status: 'OK',
+    timestamp: new Date(),
+    env: process.env.NODE_ENV
+  })
+})
+const PORT = Number(process.env.PORT || 3001)
 const DATA_DIR = path.join(process.cwd(), 'server')
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads')
 const GEN_DIR = path.join(UPLOADS_DIR, 'generated')
-
-// Logo após os imports, antes de qualquer middleware
-app.get('/health', (req, res) => {
-  console.log('[DEBUG] Health check accessed');
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date(),
-    env: process.env.NODE_ENV 
-  });
-});
 
 try {
   const envPath = path.join(process.cwd(), '.env')
@@ -47,11 +46,12 @@ try {
 function getPgConnectionString() {
   const fromEnv = process.env.DATABASE_URL && process.env.DATABASE_URL.trim()
   if (fromEnv) return fromEnv
+  const local = process.env.PG_LOCAL_URL && process.env.PG_LOCAL_URL.trim()
+  if (local) return local
   if (process.env.NODE_ENV === 'production') {
     throw new Error('DATABASE_URL não configurada em produção')
   }
-  const local = process.env.PG_LOCAL_URL && process.env.PG_LOCAL_URL.trim()
-  return local || 'postgres://postgres:postgres@localhost:5432/matrixbit_db'
+  return 'postgres://postgres:postgres@localhost:5432/matrixbit_db'
 }
 const pgPool = new Pool({ connectionString: getPgConnectionString() })
 try {
@@ -737,16 +737,25 @@ app.post('/api/chat/title', async (req, res) => {
 
 // Serve static files from React app (production)
 const DIST_DIR = path.join(process.cwd(), 'dist')
-if (fs.existsSync(DIST_DIR)) {
-  app.use(express.static(DIST_DIR))
-  app.get('*', (req, res, next) => {
-    // Don't intercept API calls that weren't handled above
-    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
-      return next()
-    }
-    res.sendFile(path.join(DIST_DIR, 'index.html'))
-  })
+let frontendMounted = false
+function tryMountFrontend() {
+  if (!frontendMounted && fs.existsSync(DIST_DIR)) {
+    app.use(express.static(DIST_DIR))
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+        return next()
+      }
+      res.sendFile(path.join(DIST_DIR, 'index.html'))
+    })
+    frontendMounted = true
+    console.log('[server] frontend mounted from dist/')
+  }
 }
+tryMountFrontend()
+app.use((req, res, next) => {
+  tryMountFrontend()
+  next()
+})
 
 // Global error handler
 app.use((err, req, res, next) => {
