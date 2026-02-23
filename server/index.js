@@ -12,7 +12,7 @@ import connectPgSimple from 'connect-pg-simple'
 const PgSession = connectPgSimple(session)
 
 const app = express()
-const PORT = 3001
+const PORT = process.env.PORT || 3001
 const DATA_DIR = path.join(process.cwd(), 'server')
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads')
 const GEN_DIR = path.join(UPLOADS_DIR, 'generated')
