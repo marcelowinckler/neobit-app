@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server/index.js",
+    "prestart": "vite build",
     "start": "node server/index.js"
   },
   "dependencies": {
